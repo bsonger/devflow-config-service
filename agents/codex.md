@@ -41,7 +41,7 @@ flowchart LR
 ## 当前边界
 
 - `Configuration` 是唯一对外资源
-- 不再提供 `Project`、`Application`、`Manifest`、`Job`、`Intent`、`Verify`
+- 不再提供 `Project`、`Application`、`Manifest`、`Release`、`Intent`、`Verify`
 - `cmd/main.go`、`pkg/router`、`pkg/api`、`pkg/service`、`pkg/model` 只保留 configuration 相关逻辑
 
 ## 典型请求流程

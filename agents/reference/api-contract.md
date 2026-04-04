@@ -11,7 +11,7 @@
 - `Project`
 - `Application`
 - `Manifest`
-- `Job`
+- `Release`
 - `Intent`
 - `Verify`
 

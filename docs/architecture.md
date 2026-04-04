@@ -23,5 +23,5 @@
 
 - 不负责 `Project`
 - 不负责 `Application`
-- 不负责 `Manifest`、`Job`、`Intent`
+- 不负责 `Manifest`、`Release`、`Intent`
 - 不负责 verify webhook / writeback
