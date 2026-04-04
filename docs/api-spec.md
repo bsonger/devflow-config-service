@@ -30,12 +30,6 @@
 - resource not found -> `404`
 - storage or uncategorized internal error -> `500`
 
-## Non-Goals
+## Boundary Note
 
-This repo does not expose public CRUD for:
-- `Project`
-- `Application`
-- `Manifest`
-- `Release`
-- `Intent`
-- `Verify`
+For repo scope and non-goals, see `docs/architecture.md`.
