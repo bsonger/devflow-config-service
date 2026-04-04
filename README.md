@@ -5,7 +5,7 @@
 边界：
 
 - 仅保留 `Configuration` 的 HTTP、service、model、store 和配置加载
-- 不提供 `Project`、`Application`、`Manifest`、`Job`、`Intent`、`Verify` 对外面
+- 不提供 `Project`、`Application`、`Manifest`、`Release`、`Intent`、`Verify` 对外面
 - 启动、路由中间件、分页、响应和观测基础设施来自 `../devflow-service-common`
 
 仓库文档：

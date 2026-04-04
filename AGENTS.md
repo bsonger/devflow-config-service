@@ -4,7 +4,7 @@
 
 - This repository is `devflow-config-service`.
 - Public surface is `Configuration` only.
-- Do not reintroduce `Project`, `Application`, `Manifest`, `Job`, `Intent`, or `Verify` routes, models, router modules, or runtime/bootstrap logic.
+- Do not reintroduce `Project`, `Application`, `Manifest`, `Release`, `Intent`, or `Verify` routes, models, router modules, or runtime/bootstrap logic.
 
 ## Structure
 
