@@ -1,25 +1,41 @@
 # API Spec
 
-## Resources
+## Purpose
 
-- `Configuration`
-  - `GET /api/v1/configurations`
-  - `POST /api/v1/configurations`
-  - `GET /api/v1/configurations/:id`
-  - `PUT /api/v1/configurations/:id`
-  - `DELETE /api/v1/configurations/:id`
+`devflow-config-service` only exposes public HTTP APIs for `Configuration`.
+
+## Endpoint Groups
+
+### `Configuration`
+- `GET /api/v1/configurations`
+- `POST /api/v1/configurations`
+- `GET /api/v1/configurations/:id`
+- `PUT /api/v1/configurations/:id`
+- `DELETE /api/v1/configurations/:id`
+
+## Request Rules
+
+- list endpoints support the common pagination parameters used in this repo
+- create/update handlers currently bind the repo-owned `Configuration` payload directly
 
 ## Response Rules
 
-- 创建接口返回统一创建响应
-- 列表接口遵循统一分页参数和分页响应头
+- create endpoints return the common create-response shape
+- list endpoints return pagination headers
+- success payloads must stay aligned with Swagger
 
 ## Error Rules
 
-- 非法 ObjectID 返回 `400`
-- 资源不存在返回 `404`
-- 存储层或未分类错误返回 `500`
+- invalid ObjectID -> `400`
+- resource not found -> `404`
+- storage or uncategorized internal error -> `500`
 
-## Swagger
+## Non-Goals
 
-Swagger 必须只包含 `Configuration` 接口。
+This repo does not expose public CRUD for:
+- `Project`
+- `Application`
+- `Manifest`
+- `Release`
+- `Intent`
+- `Verify`
