@@ -6,6 +6,7 @@ require (
 	github.com/argoproj/argo-cd/v3 v3.2.2
 	github.com/argoproj/gitops-engine v0.7.1-0.20251217140045-5baed5604d2d
 	github.com/bsonger/devflow-common v0.0.0-20260207191634-7b70960f1987
+	github.com/bsonger/devflow-service-common v0.0.0
 	github.com/gin-contrib/cors v1.7.6
 	github.com/gin-gonic/gin v1.11.0
 	github.com/grafana/pyroscope-go v1.2.7
@@ -27,6 +28,8 @@ require (
 	k8s.io/apimachinery v0.34.1
 	k8s.io/client-go v0.34.1
 )
+
+replace github.com/bsonger/devflow-service-common => ../devflow-service-common
 
 require (
 	cel.dev/expr v0.24.0 // indirect

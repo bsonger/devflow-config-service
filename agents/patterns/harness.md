@@ -13,18 +13,14 @@
 
 ## Devflow 切片建议
 
-- 优先按资源拆：
-  - `Application`
-  - `Manifest`
-  - `Job`
-  - `Configuration`
-- 其次按状态流拆：
-  - 创建
-  - 激活 manifest
-  - Tekton 构建结果回写
-  - Argo 同步
-  - 回滚
-- 避免一次 sprint 同时覆盖多条状态流。
+- 优先按 configuration 相关切片：
+  - 路由
+  - handler
+  - service
+  - model
+  - Swagger
+  - harness 文档
+- 避免一次 sprint 同时覆盖文档、代码和观测规则中的多个大面。
 
 ## Contract 最低要求
 
@@ -37,9 +33,9 @@
 - 把 `done` 写成可检查行为：
   - HTTP 状态码与响应体
   - Mongo 字段变化
-  - `Application` / `Manifest` / `Job` 状态值
   - 日志关键点
   - Swagger 是否需要同步
+  - 文档是否与边界一致
 - 明确验证方法：
   - `go test ./...`
   - 路由级请求检查
@@ -58,16 +54,16 @@
 
 ## Evaluator 检查项
 
-- 功能正确：handler、service、状态流是否符合 contract。
-- 资源一致：资源 ID、名称、状态来源是否前后一致。
+- 功能正确：handler、service 是否符合 contract。
+- 资源一致：资源 ID、名称、软删除和状态来源是否前后一致。
 - 可靠性：错误是否上抛，更新是否幂等，关键步骤是否留日志。
 - 运维约束：不越权改外部系统，不引入未声明配置。
-- 文档同步：`agents/`、Swagger、README 是否需要同步。
+- 文档同步：`agents/`、Swagger、README、`docs/*.md` 是否需要同步。
 - 可观测性：trace / log / metrics / profile 入口是否仍满足 observability contract。
 
 ## 适合当前仓库的示例切片
 
-- Sprint A：`Application.UpdateActiveManifest` 的校验与错误语义。
-- Sprint B：`Manifest.Patch` 的字段边界与 Swagger 同步。
-- Sprint C：`Job.Create -> syncArgo -> status` 链路的一致性。
-- Sprint D：Tekton / Argo 事件回写的状态来源说明。
+- Sprint A：`Configuration` 的校验与错误语义。
+- Sprint B：`Configuration` 列表、软删除与 Swagger 同步。
+- Sprint C：观测规范与 harness 文档同步。
+- Sprint D：启动协议与 sub-agent 规则收口。

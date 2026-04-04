@@ -1,23 +1,30 @@
 # Devflow Config Service
 
-This repository was exported from the `bsonger/devflow` monorepo.
+`devflow-config-service` 只负责 `Configuration` 资源。
 
-GitHub target:
+边界：
 
-- `git@github.com:bsonger/devflow-config-service.git`
+- 仅保留 `Configuration` 的 HTTP、service、model、store 和配置加载
+- 不提供 `Project`、`Application`、`Manifest`、`Job`、`Intent`、`Verify` 对外面
+- 启动、路由中间件、分页、响应和观测基础设施来自 `../devflow-service-common`
 
-Go module:
+仓库文档：
 
-- `github.com/bsonger/devflow-config-service`
+- [架构](docs/architecture.md)
+- [接口规范](docs/api-spec.md)
+- [约束](docs/constraints.md)
+- [观测规范](docs/observability.md)
+- [Harness](docs/harness.md)
 
-Current scope:
+运行约定：
 
-- service entrypoint from `platform/config-service/cmd/main.go`
-- shared bootstrap from `platform/shared/bootstrap`
-- current shared domain/runtime packages from `pkg/`
+- 任何调用其他服务或外部系统的代码都必须同时产出 `metrics + trace + structured log`
+- 默认 harness 为 `Planner -> Generator -> Evaluator`
+- 运行时支持 delegation 时，必须真实启动对应 sub-agent，不允许只在单 agent 内口头模拟
 
-Notes:
+常用命令：
 
-- This is a first-stage split repo.
-- Shared packages are still copied from the monorepo so the service can compile independently.
-- A later cleanup phase can move stable shared pieces into `devflow-common` or another shared module.
+- `go run ./cmd`
+- `go build ./cmd/main.go`
+- `go test ./...`
+- `swag init -g cmd/main.go --parseDependency`

@@ -1,24 +1,28 @@
 package main
 
 import (
+	"github.com/bsonger/devflow-config-service/pkg/config"
 	"github.com/bsonger/devflow-config-service/pkg/router"
-	"github.com/bsonger/devflow-config-service/platform/shared/bootstrap"
+	"github.com/bsonger/devflow-service-common/bootstrap"
+	"github.com/bsonger/devflow-service-common/observability"
 )
 
 func main() {
-	err := bootstrap.Run(bootstrap.Options{
-		Name: "config-service",
-		RouteOptions: router.Options{
-			ServiceName:   "config-service",
-			EnableSwagger: true,
-			Modules: []router.Module{
-				router.ModuleConfiguration,
-			},
+	err := bootstrap.Run(bootstrap.Options[config.Config, router.Options, string]{
+		Name:         "config-service",
+		RouteOptions: router.Options{ServiceName: "config-service", EnableSwagger: true},
+		Load:         config.Load,
+		InitRuntime:  config.InitRuntime,
+		NewRouter: func(opts router.Options) bootstrap.Runner {
+			return router.NewRouterWithOptions(opts)
 		},
-		PortEnv:        "CONFIG_SERVICE_PORT",
-		DefaultPort:    8082,
-		MetricsPortEnv: "CONFIG_SERVICE_METRICS_PORT",
-		PprofPortEnv:   "CONFIG_SERVICE_PPROF_PORT",
+		ResolveConfigPort:  config.ResolveConfigPort,
+		StartMetricsServer: observability.StartMetricsServer,
+		StartPprofServer:   observability.StartPprofServer,
+		PortEnv:            "CONFIG_SERVICE_PORT",
+		DefaultPort:        8082,
+		MetricsPortEnv:     "CONFIG_SERVICE_METRICS_PORT",
+		PprofPortEnv:       "CONFIG_SERVICE_PPROF_PORT",
 	})
 	if err != nil {
 		panic(err)
