@@ -1,26 +1,36 @@
-# Config Service
+# Config Service Platform Notes
 
-职责：
+## Purpose
 
-- 提供 `Configuration` 的 CRUD
-- 作为配置元数据的单独服务边界
+This file is the repo-local runtime note for `devflow-config-service`.
+For public API shape, ownership, and resource details, prefer:
+- `../README.md`
+- `../docs/`
+- `../docs/resources/`
 
-当前实现：
+## Runtime entrypoints
 
-- `cmd/main.go` 通过 `devflow-service-common/bootstrap` 启动
-- `pkg/api/configuration.go`
-- `pkg/service/configuration.go`
-- `pkg/router/configuration.go`
-- `pkg/config/config.go`
+- process entry: `cmd/main.go`
+- shared bootstrap: `../devflow-service-common/bootstrap`
+- router root: `pkg/router/router.go`
 
-建议端口：
+## Main local code paths
 
-- `CONFIG_SERVICE_PORT`
-- `CONFIG_SERVICE_METRICS_PORT`
-- `CONFIG_SERVICE_PPROF_PORT`
+- configuration routes: `pkg/router/configuration.go`
+- configuration handler: `pkg/api/configuration.go`
+- configuration logic: `pkg/service/configuration.go`
+- runtime config: `pkg/config/config.go`
 
-运行时：
+## Platform dependencies
 
-- 上报的 OTel `service.name` 为 `config-service`
-- 任何 outbound service / external call 都必须带 `metrics + trace + structured log`
-- 默认 harness 为 `Planner -> Generator -> Evaluator`，并且支持 delegation 时必须真实启动 sub-agents
+- shared response / pagination: `devflow-service-common/httpx`
+- shared middleware: `devflow-service-common/routercore`
+- shared observability: `devflow-service-common/observability`
+
+## Service identity
+
+- OTel `service.name`: `config-service`
+- typical ports:
+  - `CONFIG_SERVICE_PORT`
+  - `CONFIG_SERVICE_METRICS_PORT`
+  - `CONFIG_SERVICE_PPROF_PORT`
