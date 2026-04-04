@@ -2,26 +2,59 @@
 
 ## Purpose
 
-`devflow-config-service` 负责配置元数据面，只管理 `Configuration`。
+`devflow-config-service` is the metadata owner for `Configuration`.
+It provides configuration CRUD, configuration content storage, and configuration lookup for release flows.
 
-## Inbound Surface
+## Architecture Style
 
-- `GET/POST/PUT/DELETE /api/v1/configurations`
+This repo uses a **layered metadata-service backend**:
 
-## Data And Dependencies
+```text
+router -> api -> service -> store
+                    \-> model
+```
 
-- 主存储：MongoDB
-- 主要集合：`configurations`
-- 启动、路由、HTTP 公共件、观测基础设施来自 `devflow-service-common`
+## Request Flow
 
-## Outbound Rules
+```text
+Client
+  -> router
+  -> configuration handler
+  -> configuration service
+  -> Mongo store
+  -> HTTP response
+```
 
-- 当前主流程没有必须的跨服务 RPC
-- 如果后续增加调用其他服务或外部系统，必须同时产生 `metrics + trace + structured log`
+## Internal Package Layout
+
+- `cmd/main.go`
+  - process entrypoint only
+- `pkg/config`
+  - config loading
+  - runtime initialization
+- `pkg/router`
+  - route registration
+  - middleware wiring
+- `pkg/api`
+  - configuration handlers
+- `pkg/service`
+  - configuration behavior
+- `pkg/store`
+  - Mongo access
+- `pkg/model`
+  - `Configuration` model
+
+## External Dependencies
+
+- `Gin`
+- `MongoDB`
+- `devflow-service-common`
 
 ## Non-Goals
 
-- 不负责 `Project`
-- 不负责 `Application`
-- 不负责 `Manifest`、`Release`、`Intent`
-- 不负责 verify webhook / writeback
+- `Project`
+- `Application`
+- `Manifest`
+- `Release`
+- `Intent`
+- verify ingress / writeback

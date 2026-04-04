@@ -1,31 +1,55 @@
 # Devflow Config Service
 
-`devflow-config-service` 只负责 `Configuration` 资源。
+`devflow-config-service` is the backend owner for `Configuration`.
 
-边界：
+## Backend Role
 
-- 仅保留 `Configuration` 的 HTTP、service、model、store 和配置加载
-- 不提供 `Project`、`Application`、`Manifest`、`Release`、`Intent`、`Verify` 对外面
-- 启动、路由中间件、分页、响应和观测基础设施来自 `../devflow-service-common`
+- own `Configuration`
+- provide configuration metadata and content lookup
+- act as a release-input source for other services and the future platform
 
-仓库文档：
+## Backend Architecture
 
-- [架构](docs/architecture.md)
-- [接口规范](docs/api-spec.md)
-- [约束](docs/constraints.md)
-- [观测规范](docs/observability.md)
-- [Harness](docs/harness.md)
-- [资源说明](docs/resources/README.md)
+This repo uses a **layered metadata-service backend**:
 
-运行约定：
+```text
+cmd
+ -> config
+ -> router
+ -> api
+ -> service
+ -> store
+ -> model
+```
 
-- 任何调用其他服务或外部系统的代码都必须同时产出 `metrics + trace + structured log`
-- 默认 harness 为 `Planner -> Generator -> Evaluator`
-- 运行时支持 delegation 时，必须真实启动对应 sub-agent，不允许只在单 agent 内口头模拟
+### Package responsibilities
 
-常用命令：
+- `cmd/`: service startup
+- `pkg/config`: config loading and runtime init
+- `pkg/router`: Gin router and middleware wiring
+- `pkg/api`: HTTP handlers and status mapping
+- `pkg/service`: configuration rules and resource behavior
+- `pkg/store`: Mongo access
+- `pkg/model`: `Configuration` model
+
+## Non-Goals
+
+- no `Project` ownership
+- no `Application` ownership
+- no `Manifest` ownership
+- no `Release` ownership
+- no `Intent` ownership
+- no verify ingress
+
+## Key Docs
+
+- `docs/architecture.md`
+- `docs/api-spec.md`
+- `docs/constraints.md`
+- `docs/resources/README.md`
+
+## Local Run
 
 - `go run ./cmd`
 - `go build ./cmd/main.go`
 - `go test ./...`
-- `swag init -g cmd/main.go --parseDependency`
