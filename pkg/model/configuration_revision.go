@@ -11,7 +11,6 @@ type ConfigurationRevision struct {
 	ConfigurationID uuid.UUID `json:"configuration_id" db:"configuration_id"`
 	RevisionNo      int       `json:"revision_no" db:"revision_no"`
 	Files           []File    `json:"files" db:"files"`
-	EnvVars         []EnvVar  `json:"env_vars,omitempty" db:"env_vars"`
 	ContentHash     string    `json:"content_hash" db:"content_hash"`
 	Message         string    `json:"message,omitempty" db:"message"`
 	CreatedBy       string    `json:"created_by,omitempty" db:"created_by"`

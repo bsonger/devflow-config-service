@@ -1,7 +1,6 @@
 package router
 
 import (
-	_ "github.com/bsonger/devflow-config-service/docs"
 	"github.com/bsonger/devflow-service-common/routercore"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"

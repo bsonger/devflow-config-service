@@ -28,7 +28,6 @@
 | `application_id` | `uuid.UUID` | required | user | 所属应用 ID |
 | `name` | `string` | required | user | 配置名 |
 | `env` | `string` | required | user | 目标环境 |
-| `status` | `string` | optional | user/system | 配置状态 |
 | `latest_revision_no` | `int` | system-managed | no | 当前最新 revision 序号 |
 | `latest_revision_id` | `*uuid.UUID` | optional/system-managed | no | 当前最新 revision ID |
 
@@ -41,7 +40,6 @@
 | `configuration_id` | `uuid.UUID` | 所属配置 |
 | `revision_no` | `int` | 版本号 |
 | `files` | `[]File` | 配置文件快照 |
-| `env_vars` | `[]EnvVar` | 环境变量快照 |
 | `content_hash` | `string` | 内容哈希 |
 | `message` | `string` | 变更说明 |
 | `created_by` | `string` | 创建人 |
@@ -50,10 +48,6 @@
 ### `File`
 - `name: string`
 - `content: string`
-
-### `EnvVar`
-- `name: string`
-- `value: string`
 
 ## Create / update rules
 
@@ -66,7 +60,7 @@
 
 ### Update
 - mutable fields:
-  - `name`, `env`, `status`
+  - `name`, `env`
 - immutable/system-managed fields:
   - `id`, `created_at`, `deleted_at`
   - `latest_revision_no`, `latest_revision_id`

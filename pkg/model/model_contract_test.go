@@ -9,7 +9,7 @@ import (
 
 func TestConfigurationContract(t *testing.T) {
 	typ := reflect.TypeOf(Configuration{})
-	for _, field := range []string{"ApplicationID", "Name", "Env", "Status", "LatestRevisionNo", "LatestRevisionID"} {
+	for _, field := range []string{"ApplicationID", "Name", "Env", "LatestRevisionNo", "LatestRevisionID"} {
 		f, ok := typ.FieldByName(field)
 		if !ok {
 			t.Fatalf("Configuration missing field %s", field)
@@ -25,7 +25,7 @@ func TestConfigurationContract(t *testing.T) {
 
 func TestConfigurationRevisionContract(t *testing.T) {
 	typ := reflect.TypeOf(ConfigurationRevision{})
-	for _, field := range []string{"ConfigurationID", "RevisionNo", "Files", "EnvVars", "ContentHash", "CreatedAt"} {
+	for _, field := range []string{"ConfigurationID", "RevisionNo", "Files", "ContentHash", "CreatedAt"} {
 		f, ok := typ.FieldByName(field)
 		if !ok {
 			t.Fatalf("ConfigurationRevision missing field %s", field)

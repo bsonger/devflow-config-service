@@ -64,7 +64,6 @@ func testConfiguration() model.Configuration {
 		ApplicationID:    applicationID,
 		Name:             "cfg-1",
 		Env:              "staging",
-		Status:           "active",
 		LatestRevisionNo: 1,
 		LatestRevisionID: &revisionID,
 	}

@@ -34,9 +34,9 @@ func (s *configurationService) Create(ctx context.Context, cfg *model.Configurat
 
 	_, err := store.DB().ExecContext(ctx, `
 		insert into configurations (
-			id, application_id, name, env, status, latest_revision_no, latest_revision_id, created_at, updated_at, deleted_at
-		) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
-	`, cfg.ID, nullableUUID(cfg.ApplicationID), cfg.Name, cfg.Env, cfg.Status, cfg.LatestRevisionNo, nullableUUIDPtr(cfg.LatestRevisionID), cfg.CreatedAt, cfg.UpdatedAt, cfg.DeletedAt)
+			id, application_id, name, env, latest_revision_no, latest_revision_id, created_at, updated_at, deleted_at
+		) values ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+	`, cfg.ID, nullableUUID(cfg.ApplicationID), cfg.Name, cfg.Env, cfg.LatestRevisionNo, nullableUUIDPtr(cfg.LatestRevisionID), cfg.CreatedAt, cfg.UpdatedAt, cfg.DeletedAt)
 	if err != nil {
 		log.Error("create configuration failed", zap.Error(err))
 		return uuid.Nil, err
@@ -53,7 +53,7 @@ func (s *configurationService) Get(ctx context.Context, id uuid.UUID) (*model.Co
 	)
 
 	cfg, err := scanConfiguration(store.DB().QueryRowContext(ctx, `
-		select id, application_id, name, env, status, latest_revision_no, latest_revision_id, created_at, updated_at, deleted_at
+		select id, application_id, name, env, latest_revision_no, latest_revision_id, created_at, updated_at, deleted_at
 		from configurations
 		where id = $1 and deleted_at is null
 	`, id))
@@ -84,9 +84,9 @@ func (s *configurationService) Update(ctx context.Context, cfg *model.Configurat
 
 	result, err := store.DB().ExecContext(ctx, `
 		update configurations
-		set application_id=$2, name=$3, env=$4, status=$5, latest_revision_no=$6, latest_revision_id=$7, updated_at=$8, deleted_at=$9
+		set application_id=$2, name=$3, env=$4, latest_revision_no=$5, latest_revision_id=$6, updated_at=$7, deleted_at=$8
 		where id = $1 and deleted_at is null
-	`, cfg.ID, nullableUUID(cfg.ApplicationID), cfg.Name, cfg.Env, cfg.Status, cfg.LatestRevisionNo, nullableUUIDPtr(cfg.LatestRevisionID), cfg.UpdatedAt, cfg.DeletedAt)
+	`, cfg.ID, nullableUUID(cfg.ApplicationID), cfg.Name, cfg.Env, cfg.LatestRevisionNo, nullableUUIDPtr(cfg.LatestRevisionID), cfg.UpdatedAt, cfg.DeletedAt)
 	if err != nil {
 		log.Error("update configuration failed", zap.Error(err))
 		return err
@@ -140,7 +140,7 @@ func (s *configurationService) List(ctx context.Context, filter ConfigurationLis
 	)
 
 	query := `
-		select id, application_id, name, env, status, latest_revision_no, latest_revision_id, created_at, updated_at, deleted_at
+		select id, application_id, name, env, latest_revision_no, latest_revision_id, created_at, updated_at, deleted_at
 		from configurations
 	`
 	clauses := make([]string, 0, 2)
@@ -196,7 +196,6 @@ func scanConfiguration(scanner interface {
 		&applicationID,
 		&cfg.Name,
 		&cfg.Env,
-		&cfg.Status,
 		&cfg.LatestRevisionNo,
 		&latestRevisionID,
 		&cfg.CreatedAt,
