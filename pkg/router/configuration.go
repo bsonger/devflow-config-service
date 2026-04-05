@@ -11,6 +11,7 @@ func RegisterConfigurationRoutes(rg *gin.RouterGroup) {
 	cfg.GET("", api.ConfigurationRouteApi.List)
 	cfg.GET("/:id", api.ConfigurationRouteApi.Get)
 	cfg.POST("", api.ConfigurationRouteApi.Create)
+	cfg.POST("/:id/sync", api.ConfigurationRouteApi.Sync)
 	cfg.PUT("/:id", api.ConfigurationRouteApi.Update)
 	cfg.DELETE("/:id", api.ConfigurationRouteApi.Delete)
 }

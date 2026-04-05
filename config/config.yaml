@@ -11,3 +11,6 @@ log:
 otel:
   endpoint: "127.0.0.1:4317"
   service_name: "devflow"
+config_repo:
+  root_dir: "../devflow-config-repo"
+  default_ref: "main"

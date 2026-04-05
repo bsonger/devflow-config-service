@@ -1,4 +1,4 @@
-package model
+package domain
 
 import (
 	"time"
@@ -12,6 +12,8 @@ type ConfigurationRevision struct {
 	RevisionNo      int       `json:"revision_no" db:"revision_no"`
 	Files           []File    `json:"files" db:"files"`
 	ContentHash     string    `json:"content_hash" db:"content_hash"`
+	SourceCommit    string    `json:"source_commit" db:"source_commit"`
+	SourceDigest    string    `json:"source_digest,omitempty" db:"source_digest"`
 	Message         string    `json:"message,omitempty" db:"message"`
 	CreatedBy       string    `json:"created_by,omitempty" db:"created_by"`
 	CreatedAt       time.Time `json:"created_at" db:"created_at"`

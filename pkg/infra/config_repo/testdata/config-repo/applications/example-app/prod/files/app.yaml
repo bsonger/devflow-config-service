@@ -1,0 +1,4 @@
+server:
+  port: 8080
+feature_flags:
+  cool_feature: false

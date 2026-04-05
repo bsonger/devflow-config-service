@@ -1,4 +1,4 @@
-package service
+package app
 
 import (
 	"context"
@@ -7,36 +7,38 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bsonger/devflow-config-service/pkg/model"
-	"github.com/bsonger/devflow-config-service/pkg/store"
+	"github.com/bsonger/devflow-config-service/pkg/domain"
+	"github.com/bsonger/devflow-config-service/pkg/infra/store"
 	"github.com/bsonger/devflow-service-common/loggingx"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
-var ConfigurationService = NewConfigurationService()
+var ConfigurationService = NewConfigurationService(nil)
 
 type ConfigurationListFilter struct {
 	IncludeDeleted bool
 	Name           string
 }
 
-type configurationService struct{}
-
-func NewConfigurationService() *configurationService {
-	return &configurationService{}
+type configurationService struct {
+	repo ConfigRepository
 }
 
-func (s *configurationService) Create(ctx context.Context, cfg *model.Configuration) (uuid.UUID, error) {
+func NewConfigurationService(repo ConfigRepository) *configurationService {
+	return &configurationService{repo: repo}
+}
+
+func (s *configurationService) Create(ctx context.Context, cfg *domain.Configuration) (uuid.UUID, error) {
 	log := loggingx.LoggerWithContext(ctx).With(
 		zap.String("operation", "create_configuration"),
 	)
 
 	_, err := store.DB().ExecContext(ctx, `
 		insert into configurations (
-			id, application_id, name, env, latest_revision_no, latest_revision_id, created_at, updated_at, deleted_at
-		) values ($1,$2,$3,$4,$5,$6,$7,$8,$9)
-	`, cfg.ID, nullableUUID(cfg.ApplicationID), cfg.Name, cfg.Env, cfg.LatestRevisionNo, nullableUUIDPtr(cfg.LatestRevisionID), cfg.CreatedAt, cfg.UpdatedAt, cfg.DeletedAt)
+			id, application_id, name, env, source_path, latest_revision_no, latest_revision_id, created_at, updated_at, deleted_at
+		) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+	`, cfg.ID, nullableUUID(cfg.ApplicationID), cfg.Name, cfg.Env, cfg.SourcePath, cfg.LatestRevisionNo, nullableUUIDPtr(cfg.LatestRevisionID), cfg.CreatedAt, cfg.UpdatedAt, cfg.DeletedAt)
 	if err != nil {
 		log.Error("create configuration failed", zap.Error(err))
 		return uuid.Nil, err
@@ -46,14 +48,14 @@ func (s *configurationService) Create(ctx context.Context, cfg *model.Configurat
 	return cfg.GetID(), nil
 }
 
-func (s *configurationService) Get(ctx context.Context, id uuid.UUID) (*model.Configuration, error) {
+func (s *configurationService) Get(ctx context.Context, id uuid.UUID) (*domain.Configuration, error) {
 	log := loggingx.LoggerWithContext(ctx).With(
 		zap.String("operation", "get_configuration"),
 		zap.String("configuration_id", id.String()),
 	)
 
 	cfg, err := scanConfiguration(store.DB().QueryRowContext(ctx, `
-		select id, application_id, name, env, latest_revision_no, latest_revision_id, created_at, updated_at, deleted_at
+		select id, application_id, name, env, source_path, latest_revision_no, latest_revision_id, created_at, updated_at, deleted_at
 		from configurations
 		where id = $1 and deleted_at is null
 	`, id))
@@ -66,7 +68,7 @@ func (s *configurationService) Get(ctx context.Context, id uuid.UUID) (*model.Co
 	return cfg, nil
 }
 
-func (s *configurationService) Update(ctx context.Context, cfg *model.Configuration) error {
+func (s *configurationService) Update(ctx context.Context, cfg *domain.Configuration) error {
 	log := loggingx.LoggerWithContext(ctx).With(
 		zap.String("operation", "update_configuration"),
 		zap.String("configuration_id", cfg.GetID().String()),
@@ -84,9 +86,9 @@ func (s *configurationService) Update(ctx context.Context, cfg *model.Configurat
 
 	result, err := store.DB().ExecContext(ctx, `
 		update configurations
-		set application_id=$2, name=$3, env=$4, latest_revision_no=$5, latest_revision_id=$6, updated_at=$7, deleted_at=$8
+		set application_id=$2, name=$3, env=$4, source_path=$5, latest_revision_no=$6, latest_revision_id=$7, updated_at=$8, deleted_at=$9
 		where id = $1 and deleted_at is null
-	`, cfg.ID, nullableUUID(cfg.ApplicationID), cfg.Name, cfg.Env, cfg.LatestRevisionNo, nullableUUIDPtr(cfg.LatestRevisionID), cfg.UpdatedAt, cfg.DeletedAt)
+	`, cfg.ID, nullableUUID(cfg.ApplicationID), cfg.Name, cfg.Env, cfg.SourcePath, cfg.LatestRevisionNo, nullableUUIDPtr(cfg.LatestRevisionID), cfg.UpdatedAt, cfg.DeletedAt)
 	if err != nil {
 		log.Error("update configuration failed", zap.Error(err))
 		return err
@@ -133,14 +135,14 @@ func (s *configurationService) Delete(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
-func (s *configurationService) List(ctx context.Context, filter ConfigurationListFilter) ([]model.Configuration, error) {
+func (s *configurationService) List(ctx context.Context, filter ConfigurationListFilter) ([]domain.Configuration, error) {
 	log := loggingx.LoggerWithContext(ctx).With(
 		zap.String("operation", "list_configurations"),
 		zap.Any("filter", filter),
 	)
 
 	query := `
-		select id, application_id, name, env, latest_revision_no, latest_revision_id, created_at, updated_at, deleted_at
+		select id, application_id, name, env, source_path, latest_revision_no, latest_revision_id, created_at, updated_at, deleted_at
 		from configurations
 	`
 	clauses := make([]string, 0, 2)
@@ -165,7 +167,7 @@ func (s *configurationService) List(ctx context.Context, filter ConfigurationLis
 	}
 	defer rows.Close()
 
-	cfgs := make([]model.Configuration, 0)
+	cfgs := make([]domain.Configuration, 0)
 	for rows.Next() {
 		cfg, err := scanConfiguration(rows)
 		if err != nil {
@@ -183,9 +185,9 @@ func (s *configurationService) List(ctx context.Context, filter ConfigurationLis
 
 func scanConfiguration(scanner interface {
 	Scan(dest ...any) error
-}) (*model.Configuration, error) {
+}) (*domain.Configuration, error) {
 	var (
-		cfg              model.Configuration
+		cfg              domain.Configuration
 		applicationID    sql.NullString
 		latestRevisionID sql.NullString
 		deletedAt        sql.NullTime
@@ -196,6 +198,7 @@ func scanConfiguration(scanner interface {
 		&applicationID,
 		&cfg.Name,
 		&cfg.Env,
+		&cfg.SourcePath,
 		&cfg.LatestRevisionNo,
 		&latestRevisionID,
 		&cfg.CreatedAt,

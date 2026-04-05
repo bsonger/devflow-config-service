@@ -1,4 +1,4 @@
-package model
+package domain
 
 type LogConfig struct {
 	Level  string `mapstructure:"level" json:"level" yaml:"level"`

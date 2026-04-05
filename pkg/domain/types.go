@@ -1,4 +1,4 @@
-package model
+package domain
 
 type EnvVar struct {
 	Name  string `json:"name"`

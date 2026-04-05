@@ -13,6 +13,7 @@
 - `GET /api/v1/configurations`
 - `POST /api/v1/configurations`
 - `GET /api/v1/configurations/{id}`
+- `POST /api/v1/configurations/{id}/sync`
 - `PUT /api/v1/configurations/{id}`
 - `DELETE /api/v1/configurations/{id}`
 
@@ -20,7 +21,8 @@
 
 - list endpoints use `page` and `page_size`
 - `POST` and `PUT` use request DTOs, not raw domain models
-- writable fields are `application_id`, `name`, `env`, and revision pointers
+- writable fields are `application_id`, `name`, `env`, and `source_path`
+- `POST /api/v1/configurations/{id}/sync` freezes the current config-repo snapshot into an immutable revision
 
 ## Response Rules
 
@@ -32,6 +34,7 @@
 ## Error Rules
 
 - invalid ID or request body -> `400 invalid_argument`
+- missing config repo wiring or missing source path -> `424 failed_precondition`
 - resource not found -> `404 not_found`
 - storage or uncategorized internal error -> `500 internal`
 

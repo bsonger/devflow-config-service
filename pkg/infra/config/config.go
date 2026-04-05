@@ -4,18 +4,26 @@ import (
 	"context"
 	"database/sql"
 
-	"github.com/bsonger/devflow-config-service/pkg/model"
-	"github.com/bsonger/devflow-config-service/pkg/store"
+	"github.com/bsonger/devflow-config-service/pkg/app"
+	"github.com/bsonger/devflow-config-service/pkg/domain"
+	configrepo "github.com/bsonger/devflow-config-service/pkg/infra/config_repo"
+	"github.com/bsonger/devflow-config-service/pkg/infra/store"
 	"github.com/bsonger/devflow-service-common/observability"
 	"github.com/spf13/viper"
 )
 
+type ConfigRepoConfig struct {
+	RootDir    string `mapstructure:"root_dir" json:"root_dir" yaml:"root_dir"`
+	DefaultRef string `mapstructure:"default_ref" json:"default_ref" yaml:"default_ref"`
+}
+
 type Config struct {
-	Server    *model.ServerConfig   `mapstructure:"server" json:"server" yaml:"server"`
-	Postgres  *model.PostgresConfig `mapstructure:"postgres" json:"postgres" yaml:"postgres"`
-	Log       *model.LogConfig      `mapstructure:"log" json:"log" yaml:"log"`
-	Otel      *model.OtelConfig     `mapstructure:"otel" json:"otel" yaml:"otel"`
-	Pyroscope string                `mapstructure:"pyroscope" json:"pyroscope" yaml:"pyroscope"`
+	Server     *domain.ServerConfig   `mapstructure:"server" json:"server" yaml:"server"`
+	Postgres   *domain.PostgresConfig `mapstructure:"postgres" json:"postgres" yaml:"postgres"`
+	Log        *domain.LogConfig      `mapstructure:"log" json:"log" yaml:"log"`
+	Otel       *domain.OtelConfig     `mapstructure:"otel" json:"otel" yaml:"otel"`
+	ConfigRepo *ConfigRepoConfig      `mapstructure:"config_repo" json:"config_repo" yaml:"config_repo"`
+	Pyroscope  string                 `mapstructure:"pyroscope" json:"pyroscope" yaml:"pyroscope"`
 }
 
 func Load() (*Config, error) {
@@ -55,14 +63,14 @@ func InitRuntime(ctx context.Context, config *Config, serviceName string) (func(
 		return nil, err
 	}
 
-	db, err := sql.Open("pgx", stringValue(config.Postgres, func(v *model.PostgresConfig) string { return v.DSN }))
+	db, err := sql.Open("pgx", stringValue(config.Postgres, func(v *domain.PostgresConfig) string { return v.DSN }))
 	if err != nil {
 		return shutdown, err
 	}
 	store.ApplyPool(db,
-		intValue(config.Postgres, func(v *model.PostgresConfig) int { return v.MaxOpenConns }),
-		intValue(config.Postgres, func(v *model.PostgresConfig) int { return v.MaxIdleConns }),
-		intValue(config.Postgres, func(v *model.PostgresConfig) int { return v.ConnMaxLifetimeMinutes }),
+		intValue(config.Postgres, func(v *domain.PostgresConfig) int { return v.MaxOpenConns }),
+		intValue(config.Postgres, func(v *domain.PostgresConfig) int { return v.MaxIdleConns }),
+		intValue(config.Postgres, func(v *domain.PostgresConfig) int { return v.ConnMaxLifetimeMinutes }),
 	)
 	if err := db.PingContext(ctx); err != nil {
 		_ = db.Close()
@@ -70,6 +78,8 @@ func InitRuntime(ctx context.Context, config *Config, serviceName string) (func(
 	}
 
 	store.InitPostgres(db)
+	configrepo.DefaultRepository = ResolveConfigRepo(config)
+	app.ConfigureConfigRepository(configrepo.DefaultRepository)
 	return func(shutdownCtx context.Context) error {
 		closeErr := db.Close()
 		shutdownErr := shutdown(shutdownCtx)
@@ -78,6 +88,22 @@ func InitRuntime(ctx context.Context, config *Config, serviceName string) (func(
 		}
 		return closeErr
 	}, nil
+}
+
+func ResolveConfigRepo(cfg *Config) *configrepo.Repository {
+	if cfg == nil || cfg.ConfigRepo == nil || cfg.ConfigRepo.RootDir == "" {
+		return nil
+	}
+
+	defaultRef := cfg.ConfigRepo.DefaultRef
+	if defaultRef == "" {
+		defaultRef = "main"
+	}
+
+	return configrepo.NewRepository(configrepo.Options{
+		RootDir:    cfg.ConfigRepo.RootDir,
+		DefaultRef: defaultRef,
+	})
 }
 
 func ResolveConfigPort(cfg *Config) int {

@@ -1,4 +1,4 @@
-package service
+package app
 
 import (
 	"context"
@@ -8,8 +8,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/bsonger/devflow-config-service/pkg/model"
-	"github.com/bsonger/devflow-config-service/pkg/store"
+	"github.com/bsonger/devflow-config-service/pkg/domain"
+	"github.com/bsonger/devflow-config-service/pkg/infra/store"
 	"github.com/bsonger/devflow-service-common/loggingx"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
@@ -24,7 +24,7 @@ func TestCreateConfigurationUsesSQLInsert(t *testing.T) {
 
 	cfgValue := testConfiguration()
 	cfg := &cfgValue
-	id, err := NewConfigurationService().Create(context.Background(), cfg)
+	id, err := NewConfigurationService(nil).Create(context.Background(), cfg)
 	if err != nil {
 		t.Fatalf("Create returned error: %v", err)
 	}
@@ -43,7 +43,7 @@ func TestListConfigurationsUsesSQLQuery(t *testing.T) {
 	db := openSQLStub(t, stub)
 	store.InitPostgres(db)
 
-	items, err := NewConfigurationService().List(context.Background(), ConfigurationListFilter{})
+	items, err := NewConfigurationService(nil).List(context.Background(), ConfigurationListFilter{})
 	if err != nil {
 		t.Fatalf("List returned error: %v", err)
 	}
@@ -55,15 +55,16 @@ func TestListConfigurationsUsesSQLQuery(t *testing.T) {
 	}
 }
 
-func testConfiguration() model.Configuration {
+func testConfiguration() domain.Configuration {
 	id := uuid.New()
 	applicationID := uuid.New()
 	revisionID := uuid.New()
-	return model.Configuration{
-		BaseModel:        model.BaseModel{ID: id},
+	return domain.Configuration{
+		BaseModel:        domain.BaseModel{ID: id},
 		ApplicationID:    applicationID,
 		Name:             "cfg-1",
 		Env:              "staging",
+		SourcePath:       "applications/example-app/staging",
 		LatestRevisionNo: 1,
 		LatestRevisionID: &revisionID,
 	}

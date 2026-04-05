@@ -8,14 +8,16 @@
 - `ConfigurationRevision`
 
 It provides configuration identity, immutable configuration revisions, environment-variable ownership, and revision lookup for release flows.
+Configuration file content itself now comes from the centralized config repo; this service freezes repo snapshots into immutable revisions.
 
 ## Architecture Style
 
 This repo uses a **layered metadata-service backend**:
 
 ```text
-router -> api -> service -> store
-                    \-> model
+router -> api -> app -> infra/store
+                \-> infra/config_repo
+                \-> domain
 ```
 
 ## Request Flow
@@ -24,21 +26,22 @@ router -> api -> service -> store
 Client
   -> router
   -> configuration handler
-  -> configuration / revision service
+  -> configuration / revision app service
+  -> config repo snapshot reader
   -> persistence store
   -> HTTP response
 ```
 
 The target relational model is:
 
-- `Configuration` = mutable identity + latest revision pointer
-- `ConfigurationRevision` = immutable content snapshot
+- `Configuration` = mutable identity + source path + latest revision pointer
+- `ConfigurationRevision` = immutable repo-derived content snapshot
 
 ## Internal Package Layout
 
 - `cmd/main.go`
   - process entrypoint only
-- `pkg/config`
+- `pkg/infra/config`
   - config loading
   - runtime initialization
 - `pkg/router`
@@ -46,18 +49,21 @@ The target relational model is:
   - middleware wiring
 - `pkg/api`
   - configuration / revision handlers
-- `pkg/service`
+- `pkg/app`
   - configuration identity behavior
-  - revision creation / lookup behavior
-- `pkg/store`
+  - explicit sync / revision freeze behavior
+- `pkg/infra/store`
   - repo-owned configuration persistence
-- `pkg/model`
+- `pkg/infra/config_repo`
+  - centralized config repo snapshot loading
+- `pkg/domain`
   - `Configuration`, `ConfigurationRevision`
 
 ## External Dependencies
 
 - `Gin`
 - PostgreSQL persistence
+- centralized config repo filesystem layout
 - `devflow-service-common`
 
 ## Non-Goals
