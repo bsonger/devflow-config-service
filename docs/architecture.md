@@ -66,6 +66,12 @@ The target relational model is:
 - centralized config repo filesystem layout
 - `devflow-service-common`
 
+## Swagger generation
+
+- `scripts/regen-swagger.sh` reruns `swag init -g cmd/main.go --parseDependency -o docs/generated/swagger`.
+- `scripts/build.sh` calls regen then builds the binary to `bin/`.
+- Export scripts rely on `docs/generated/swagger` being populated at build time.
+
 ## Non-Goals
 
 - `Project`
