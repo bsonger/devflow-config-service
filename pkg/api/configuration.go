@@ -1,6 +1,9 @@
 package api
 
 import (
+	"context"
+	"database/sql"
+	"errors"
 	"net/http"
 
 	"github.com/bsonger/devflow-config-service/pkg/model"
@@ -12,11 +15,36 @@ import (
 
 var ConfigurationRouteApi = NewConfigurationHandler()
 
+type configurationService interface {
+	Create(ctx context.Context, cfg *model.Configuration) (uuid.UUID, error)
+	Get(ctx context.Context, id uuid.UUID) (*model.Configuration, error)
+	Update(ctx context.Context, cfg *model.Configuration) error
+	Delete(ctx context.Context, id uuid.UUID) error
+	List(ctx context.Context, filter service.ConfigurationListFilter) ([]model.Configuration, error)
+}
+
 type ConfigurationHandler struct {
+	svc configurationService
+}
+
+type CreateConfigurationRequest struct {
+	ApplicationID uuid.UUID `json:"application_id"`
+	Name          string    `json:"name"`
+	Env           string    `json:"env"`
+}
+
+type UpdateConfigurationRequest struct {
+	ApplicationID    uuid.UUID  `json:"application_id"`
+	Name             string     `json:"name"`
+	Env              string     `json:"env"`
+	LatestRevisionNo int        `json:"latest_revision_no"`
+	LatestRevisionID *uuid.UUID `json:"latest_revision_id,omitempty"`
 }
 
 func NewConfigurationHandler() *ConfigurationHandler {
-	return &ConfigurationHandler{}
+	return &ConfigurationHandler{
+		svc: service.ConfigurationService,
+	}
 }
 
 // Create
@@ -25,104 +53,128 @@ func NewConfigurationHandler() *ConfigurationHandler {
 // @Tags Configuration
 // @Accept json
 // @Produce json
-// @Param data body model.Configuration true "Configuration Data"
-// @Success 200 {object} httpx.CreateResponse
+// @Param data body api.CreateConfigurationRequest true "Configuration Data"
+// @Success 201 {object} httpx.DataResponse[model.Configuration]
 // @Router /api/v1/configurations [post]
 func (h *ConfigurationHandler) Create(c *gin.Context) {
-	var cfg *model.Configuration
-	if err := c.ShouldBindJSON(&cfg); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	var req CreateConfigurationRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		httpx.WriteError(c, http.StatusBadRequest, "invalid_argument", err.Error(), nil)
 		return
 	}
 
+	cfg := &model.Configuration{
+		ApplicationID: req.ApplicationID,
+		Name:          req.Name,
+		Env:           req.Env,
+	}
 	cfg.WithCreateDefault()
 
-	id, err := service.ConfigurationService.Create(c.Request.Context(), cfg)
+	_, err := h.svc.Create(c.Request.Context(), cfg)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		httpx.WriteError(c, http.StatusInternalServerError, "internal", err.Error(), nil)
 		return
 	}
 
-	c.JSON(http.StatusOK, httpx.CreateResponse{ID: id.String()})
+	httpx.WriteData(c, http.StatusCreated, cfg)
 }
 
 // Get
 // @Summary 获取配置
 // @Tags    Configuration
 // @Param   id path string true "Configuration ID"
-// @Success 200 {object} model.Configuration
+// @Success 200 {object} httpx.DataResponse[model.Configuration]
 // @Router  /api/v1/configurations/{id} [get]
 func (h *ConfigurationHandler) Get(c *gin.Context) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		httpx.WriteError(c, http.StatusBadRequest, "invalid_argument", "invalid id", nil)
 		return
 	}
 
-	cfg, err := service.ConfigurationService.Get(c.Request.Context(), id)
+	cfg, err := h.svc.Get(c.Request.Context(), id)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
+		if errors.Is(err, sql.ErrNoRows) {
+			httpx.WriteError(c, http.StatusNotFound, "not_found", "not found", nil)
+			return
+		}
+		httpx.WriteError(c, http.StatusNotFound, "not_found", "not found", nil)
 		return
 	}
 
-	c.JSON(http.StatusOK, cfg)
+	httpx.WriteData(c, http.StatusOK, cfg)
 }
 
 // Update
 // @Summary 更新配置
 // @Tags    Configuration
 // @Param   id   path string               true "Configuration ID"
-// @Param   data body model.Configuration true "Configuration Data"
-// @Success 200  {object} map[string]string
+// @Param   data body api.UpdateConfigurationRequest true "Configuration Data"
+// @Success 204
 // @Router  /api/v1/configurations/{id} [put]
 func (h *ConfigurationHandler) Update(c *gin.Context) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		httpx.WriteError(c, http.StatusBadRequest, "invalid_argument", "invalid id", nil)
 		return
 	}
 
-	var cfg model.Configuration
-	if err := c.ShouldBindJSON(&cfg); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	var req UpdateConfigurationRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		httpx.WriteError(c, http.StatusBadRequest, "invalid_argument", err.Error(), nil)
 		return
 	}
 
+	cfg := model.Configuration{
+		ApplicationID:    req.ApplicationID,
+		Name:             req.Name,
+		Env:              req.Env,
+		LatestRevisionNo: req.LatestRevisionNo,
+		LatestRevisionID: req.LatestRevisionID,
+	}
 	cfg.SetID(id)
 
-	if err := service.ConfigurationService.Update(c.Request.Context(), &cfg); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	if err := h.svc.Update(c.Request.Context(), &cfg); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			httpx.WriteError(c, http.StatusNotFound, "not_found", "not found", nil)
+			return
+		}
+		httpx.WriteError(c, http.StatusInternalServerError, "internal", err.Error(), nil)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "updated"})
+	httpx.WriteNoContent(c)
 }
 
 // Delete
 // @Summary 删除配置
 // @Tags    Configuration
 // @Param   id path string true "Configuration ID"
-// @Success 200 {object} map[string]string
+// @Success 204
 // @Router  /api/v1/configurations/{id} [delete]
 func (h *ConfigurationHandler) Delete(c *gin.Context) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		httpx.WriteError(c, http.StatusBadRequest, "invalid_argument", "invalid id", nil)
 		return
 	}
 
-	if err := service.ConfigurationService.Delete(c.Request.Context(), id); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	if err := h.svc.Delete(c.Request.Context(), id); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			httpx.WriteError(c, http.StatusNotFound, "not_found", "not found", nil)
+			return
+		}
+		httpx.WriteError(c, http.StatusInternalServerError, "internal", err.Error(), nil)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "deleted"})
+	httpx.WriteNoContent(c)
 }
 
 // List
 // @Summary 获取配置列表
 // @Tags    Configuration
-// @Success 200 {array} model.Configuration
+// @Success 200 {object} httpx.ListResponse[model.Configuration]
 // @Router  /api/v1/configurations [get]
 func (h *ConfigurationHandler) List(c *gin.Context) {
 	filter := service.ConfigurationListFilter{
@@ -130,21 +182,19 @@ func (h *ConfigurationHandler) List(c *gin.Context) {
 		Name:           c.Query("name"),
 	}
 
-	cfgs, err := service.ConfigurationService.List(c.Request.Context(), filter)
+	cfgs, err := h.svc.List(c.Request.Context(), filter)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		httpx.WriteError(c, http.StatusInternalServerError, "internal", err.Error(), nil)
 		return
 	}
 
 	paging, err := httpx.ParsePagination(c)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		httpx.WriteError(c, http.StatusBadRequest, "invalid_argument", err.Error(), nil)
 		return
 	}
 
 	total := len(cfgs)
 	cfgs = httpx.PaginateSlice(cfgs, paging)
-	httpx.SetPaginationHeaders(c, total, paging)
-
-	c.JSON(http.StatusOK, cfgs)
+	httpx.WriteList(c, http.StatusOK, cfgs, paging, total)
 }

@@ -12,36 +12,28 @@
 ### `Configuration`
 - `GET /api/v1/configurations`
 - `POST /api/v1/configurations`
-- `GET /api/v1/configurations/:id`
-- `PUT /api/v1/configurations/:id`
-- `DELETE /api/v1/configurations/:id`
-
-### `ConfigurationRevision`
-- `GET /api/v1/configurations/:id/revisions`
-- `POST /api/v1/configurations/:id/revisions`
-- `GET /api/v1/configurations/:id/revisions/latest`
-- `GET /api/v1/configuration-revisions/:id`
+- `GET /api/v1/configurations/{id}`
+- `PUT /api/v1/configurations/{id}`
+- `DELETE /api/v1/configurations/{id}`
 
 ## Request Rules
 
-- list endpoints support the common pagination parameters used in this repo
-- `POST /api/v1/configurations` creates the logical configuration and its first revision together
-- `Configuration` owns identity fields such as `application_id`, `name`, `env`, and revision pointers
-- revisions are immutable once created
-- environment variables belong to `ConfigurationRevision.env_vars`
-- release flows should consume a revision, not mutable configuration state directly
+- list endpoints use `page` and `page_size`
+- `POST` and `PUT` use request DTOs, not raw domain models
+- writable fields are `application_id`, `name`, `env`, and revision pointers
 
 ## Response Rules
 
-- create endpoints return the common create-response shape
-- list endpoints return pagination headers
-- success payloads must stay aligned with Swagger
+- create returns `201` with `{ "data": ... }`
+- get returns `200` with `{ "data": ... }`
+- list returns `200` with `{ "data": [...], "pagination": { ... } }`
+- update and delete return `204`
 
 ## Error Rules
 
-- invalid ID -> `400`
-- resource not found -> `404`
-- storage or uncategorized internal error -> `500`
+- invalid ID or request body -> `400 invalid_argument`
+- resource not found -> `404 not_found`
+- storage or uncategorized internal error -> `500 internal`
 
 ## Boundary Note
 

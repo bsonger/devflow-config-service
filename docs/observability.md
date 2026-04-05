@@ -26,5 +26,5 @@
 
 ## Profile
 
-- 保留 `/debug/pprof/*`
-- 需要时可接入 Pyroscope
+- `pprof` 和 Pyroscope 都是显式开启的诊断能力
+- 当前仓没有额外 repo-local telemetry 扩展
