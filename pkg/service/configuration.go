@@ -7,6 +7,7 @@ import (
 	"github.com/bsonger/devflow-common/client/logging"
 	"github.com/bsonger/devflow-common/client/mongo"
 	"github.com/bsonger/devflow-config-service/pkg/model"
+	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	mongoDriver "go.mongodb.org/mongo-driver/mongo"
 	"go.uber.org/zap"
@@ -20,61 +21,83 @@ func NewConfigurationService() *configurationService {
 	return &configurationService{}
 }
 
-func (s *configurationService) Create(ctx context.Context, cfg *model.Configuration) (primitive.ObjectID, error) {
+func (s *configurationService) Create(ctx context.Context, cfg *model.Configuration) (uuid.UUID, error) {
 	log := logging.LoggerWithContext(ctx).With(
 		zap.String("operation", "create_configuration"),
 	)
-
-	if err := mongo.Repo.Create(ctx, cfg); err != nil {
-		log.Error("create configuration failed", zap.Error(err))
-		return primitive.NilObjectID, err
+	doc, err := configToDoc(cfg)
+	if err != nil {
+		log.Error("prepare configuration doc failed", zap.Error(err))
+		return uuid.Nil, err
 	}
 
-	log.Info("configuration created", zap.String("configuration_id", cfg.GetID().Hex()))
+	if err := mongo.Repo.Create(ctx, doc); err != nil {
+		log.Error("create configuration failed", zap.Error(err))
+		return uuid.Nil, err
+	}
+	cfg.ID = bridgeObjectIDToUUID(doc.ID)
+
+	log.Info("configuration created", zap.String("configuration_id", cfg.GetID().String()))
 	return cfg.GetID(), nil
 }
 
-func (s *configurationService) Get(ctx context.Context, id primitive.ObjectID) (*model.Configuration, error) {
+func (s *configurationService) Get(ctx context.Context, id uuid.UUID) (*model.Configuration, error) {
+	oid, err := bridgeUUIDToObjectID(id)
+	if err != nil {
+		return nil, err
+	}
 	log := logging.LoggerWithContext(ctx).With(
 		zap.String("operation", "get_configuration"),
-		zap.String("configuration_id", id.Hex()),
+		zap.String("configuration_id", id.String()),
 	)
 
-	cfg := &model.Configuration{}
-	if err := mongo.Repo.FindByID(ctx, cfg, id); err != nil {
+	doc := &configurationDoc{}
+	if err := mongo.Repo.FindByID(ctx, doc, oid); err != nil {
 		log.Error("get configuration failed", zap.Error(err))
 		return nil, err
 	}
-	if cfg.DeletedAt != nil {
+	if doc.DeletedAt != nil {
 		log.Warn("configuration already deleted")
 		return nil, mongoDriver.ErrNoDocuments
 	}
 
+	cfg := configFromDoc(doc)
 	log.Debug("configuration fetched", zap.String("configuration_name", cfg.Name))
-	return cfg, nil
+	return &cfg, nil
 }
 
 func (s *configurationService) Update(ctx context.Context, cfg *model.Configuration) error {
 	log := logging.LoggerWithContext(ctx).With(
 		zap.String("operation", "update_configuration"),
-		zap.String("configuration_id", cfg.GetID().Hex()),
+		zap.String("configuration_id", cfg.GetID().String()),
 	)
+	cfgOID, err := bridgeUUIDToObjectID(cfg.GetID())
+	if err != nil {
+		return err
+	}
 
-	current := &model.Configuration{}
-	if err := mongo.Repo.FindByID(ctx, current, cfg.GetID()); err != nil {
+	currentDoc := &configurationDoc{}
+	if err := mongo.Repo.FindByID(ctx, currentDoc, cfgOID); err != nil {
 		log.Error("load configuration failed", zap.Error(err))
 		return err
 	}
-	if current.DeletedAt != nil {
+	if currentDoc.DeletedAt != nil {
 		log.Warn("update skipped for deleted configuration")
 		return mongoDriver.ErrNoDocuments
 	}
 
+	current := configFromDoc(currentDoc)
 	cfg.CreatedAt = current.CreatedAt
 	cfg.DeletedAt = current.DeletedAt
 	cfg.WithUpdateDefault()
 
-	if err := mongo.Repo.Update(ctx, cfg); err != nil {
+	doc, err := configToDoc(cfg)
+	if err != nil {
+		return err
+	}
+	doc.ID = cfgOID
+
+	if err := mongo.Repo.Update(ctx, doc); err != nil {
 		log.Error("update configuration failed", zap.Error(err))
 		return err
 	}
@@ -83,10 +106,14 @@ func (s *configurationService) Update(ctx context.Context, cfg *model.Configurat
 	return nil
 }
 
-func (s *configurationService) Delete(ctx context.Context, id primitive.ObjectID) error {
+func (s *configurationService) Delete(ctx context.Context, id uuid.UUID) error {
+	oid, err := bridgeUUIDToObjectID(id)
+	if err != nil {
+		return err
+	}
 	log := logging.LoggerWithContext(ctx).With(
 		zap.String("operation", "delete_configuration"),
-		zap.String("configuration_id", id.Hex()),
+		zap.String("configuration_id", id.String()),
 	)
 
 	now := time.Now()
@@ -97,7 +124,7 @@ func (s *configurationService) Delete(ctx context.Context, id primitive.ObjectID
 		},
 	}
 
-	if err := mongo.Repo.UpdateByID(ctx, &model.Configuration{}, id, update); err != nil {
+	if err := mongo.Repo.UpdateByID(ctx, &configurationDoc{}, oid, update); err != nil {
 		log.Error("delete configuration failed", zap.Error(err))
 		return err
 	}
@@ -112,10 +139,15 @@ func (s *configurationService) List(ctx context.Context, filter primitive.M) ([]
 		zap.Any("filter", filter),
 	)
 
-	var cfgs []model.Configuration
-	if err := mongo.Repo.List(ctx, &model.Configuration{}, filter, &cfgs); err != nil {
+	var docs []configurationDoc
+	if err := mongo.Repo.List(ctx, &configurationDoc{}, filter, &docs); err != nil {
 		log.Error("list configurations failed", zap.Error(err))
 		return nil, err
+	}
+
+	cfgs := make([]model.Configuration, 0, len(docs))
+	for i := range docs {
+		cfgs = append(cfgs, configFromDoc(&docs[i]))
 	}
 
 	log.Debug("configurations listed", zap.Int("count", len(cfgs)))

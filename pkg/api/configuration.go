@@ -7,6 +7,7 @@ import (
 	"github.com/bsonger/devflow-config-service/pkg/service"
 	"github.com/bsonger/devflow-service-common/httpx"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -43,7 +44,7 @@ func (h *ConfigurationHandler) Create(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, httpx.NewCreateResponse(id, nil))
+	c.JSON(http.StatusOK, httpx.CreateResponse{ID: id.String()})
 }
 
 // Get
@@ -53,7 +54,7 @@ func (h *ConfigurationHandler) Create(c *gin.Context) {
 // @Success 200 {object} model.Configuration
 // @Router  /api/v1/configurations/{id} [get]
 func (h *ConfigurationHandler) Get(c *gin.Context) {
-	id, err := primitive.ObjectIDFromHex(c.Param("id"))
+	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
 		return
@@ -76,7 +77,7 @@ func (h *ConfigurationHandler) Get(c *gin.Context) {
 // @Success 200  {object} map[string]string
 // @Router  /api/v1/configurations/{id} [put]
 func (h *ConfigurationHandler) Update(c *gin.Context) {
-	id, err := primitive.ObjectIDFromHex(c.Param("id"))
+	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
 		return
@@ -105,7 +106,7 @@ func (h *ConfigurationHandler) Update(c *gin.Context) {
 // @Success 200 {object} map[string]string
 // @Router  /api/v1/configurations/{id} [delete]
 func (h *ConfigurationHandler) Delete(c *gin.Context) {
-	id, err := primitive.ObjectIDFromHex(c.Param("id"))
+	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
 		return
