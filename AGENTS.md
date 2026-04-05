@@ -2,9 +2,16 @@
 
 ## Boundary
 
-- This repository is `devflow-config-service`.
-- Public surface is `Configuration` only.
-- Do not reintroduce `Project`, `Application`, `Manifest`, `Release`, `Intent`, or `Verify` routes, models, router modules, or runtime/bootstrap logic.
+Repo-local boundary summary:
+
+- this repository is `devflow-config-service`
+- public surface is `Configuration`
+
+Authoritative boundary and resource semantics:
+
+- `devflow-control/docs/system/boundaries.md`
+- `devflow-control/docs/services/config-service.md`
+- `devflow-control/docs/resources/configuration.md`
 
 ## Structure
 
@@ -12,7 +19,7 @@
 - `pkg/api/` contains the configuration handler.
 - `pkg/service/` contains configuration CRUD logic.
 - `pkg/router/` contains config-only routes and middleware.
-- `pkg/config/` initializes config, observability, Mongo, and local store state.
+- `pkg/config/` initializes config, observability, PostgreSQL, and local store state.
 - `docs/` contains the repository-level architecture, API, constraints, observability, and harness docs.
 
 ## Required Rules
