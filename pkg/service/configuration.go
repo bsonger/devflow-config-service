@@ -2,18 +2,24 @@ package service
 
 import (
 	"context"
+	"database/sql"
+	"strconv"
+	"strings"
 	"time"
 
-	"github.com/bsonger/devflow-common/client/logging"
-	"github.com/bsonger/devflow-common/client/mongo"
 	"github.com/bsonger/devflow-config-service/pkg/model"
+	"github.com/bsonger/devflow-config-service/pkg/store"
+	"github.com/bsonger/devflow-service-common/loggingx"
 	"github.com/google/uuid"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	mongoDriver "go.mongodb.org/mongo-driver/mongo"
 	"go.uber.org/zap"
 )
 
 var ConfigurationService = NewConfigurationService()
+
+type ConfigurationListFilter struct {
+	IncludeDeleted bool
+	Name           string
+}
 
 type configurationService struct{}
 
@@ -22,84 +28,76 @@ func NewConfigurationService() *configurationService {
 }
 
 func (s *configurationService) Create(ctx context.Context, cfg *model.Configuration) (uuid.UUID, error) {
-	log := logging.LoggerWithContext(ctx).With(
+	log := loggingx.LoggerWithContext(ctx).With(
 		zap.String("operation", "create_configuration"),
 	)
-	doc, err := configToDoc(cfg)
-	if err != nil {
-		log.Error("prepare configuration doc failed", zap.Error(err))
-		return uuid.Nil, err
-	}
 
-	if err := mongo.Repo.Create(ctx, doc); err != nil {
+	_, err := store.DB().ExecContext(ctx, `
+		insert into configurations (
+			id, application_id, name, env, status, latest_revision_no, latest_revision_id, created_at, updated_at, deleted_at
+		) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+	`, cfg.ID, nullableUUID(cfg.ApplicationID), cfg.Name, cfg.Env, cfg.Status, cfg.LatestRevisionNo, nullableUUIDPtr(cfg.LatestRevisionID), cfg.CreatedAt, cfg.UpdatedAt, cfg.DeletedAt)
+	if err != nil {
 		log.Error("create configuration failed", zap.Error(err))
 		return uuid.Nil, err
 	}
-	cfg.ID = bridgeObjectIDToUUID(doc.ID)
 
 	log.Info("configuration created", zap.String("configuration_id", cfg.GetID().String()))
 	return cfg.GetID(), nil
 }
 
 func (s *configurationService) Get(ctx context.Context, id uuid.UUID) (*model.Configuration, error) {
-	oid, err := bridgeUUIDToObjectID(id)
-	if err != nil {
-		return nil, err
-	}
-	log := logging.LoggerWithContext(ctx).With(
+	log := loggingx.LoggerWithContext(ctx).With(
 		zap.String("operation", "get_configuration"),
 		zap.String("configuration_id", id.String()),
 	)
 
-	doc := &configurationDoc{}
-	if err := mongo.Repo.FindByID(ctx, doc, oid); err != nil {
+	cfg, err := scanConfiguration(store.DB().QueryRowContext(ctx, `
+		select id, application_id, name, env, status, latest_revision_no, latest_revision_id, created_at, updated_at, deleted_at
+		from configurations
+		where id = $1 and deleted_at is null
+	`, id))
+	if err != nil {
 		log.Error("get configuration failed", zap.Error(err))
 		return nil, err
 	}
-	if doc.DeletedAt != nil {
-		log.Warn("configuration already deleted")
-		return nil, mongoDriver.ErrNoDocuments
-	}
 
-	cfg := configFromDoc(doc)
 	log.Debug("configuration fetched", zap.String("configuration_name", cfg.Name))
-	return &cfg, nil
+	return cfg, nil
 }
 
 func (s *configurationService) Update(ctx context.Context, cfg *model.Configuration) error {
-	log := logging.LoggerWithContext(ctx).With(
+	log := loggingx.LoggerWithContext(ctx).With(
 		zap.String("operation", "update_configuration"),
 		zap.String("configuration_id", cfg.GetID().String()),
 	)
-	cfgOID, err := bridgeUUIDToObjectID(cfg.GetID())
-	if err != nil {
-		return err
-	}
 
-	currentDoc := &configurationDoc{}
-	if err := mongo.Repo.FindByID(ctx, currentDoc, cfgOID); err != nil {
+	current, err := s.Get(ctx, cfg.GetID())
+	if err != nil {
 		log.Error("load configuration failed", zap.Error(err))
 		return err
 	}
-	if currentDoc.DeletedAt != nil {
-		log.Warn("update skipped for deleted configuration")
-		return mongoDriver.ErrNoDocuments
-	}
 
-	current := configFromDoc(currentDoc)
 	cfg.CreatedAt = current.CreatedAt
 	cfg.DeletedAt = current.DeletedAt
 	cfg.WithUpdateDefault()
 
-	doc, err := configToDoc(cfg)
+	result, err := store.DB().ExecContext(ctx, `
+		update configurations
+		set application_id=$2, name=$3, env=$4, status=$5, latest_revision_no=$6, latest_revision_id=$7, updated_at=$8, deleted_at=$9
+		where id = $1 and deleted_at is null
+	`, cfg.ID, nullableUUID(cfg.ApplicationID), cfg.Name, cfg.Env, cfg.Status, cfg.LatestRevisionNo, nullableUUIDPtr(cfg.LatestRevisionID), cfg.UpdatedAt, cfg.DeletedAt)
+	if err != nil {
+		log.Error("update configuration failed", zap.Error(err))
+		return err
+	}
+
+	rows, err := result.RowsAffected()
 	if err != nil {
 		return err
 	}
-	doc.ID = cfgOID
-
-	if err := mongo.Repo.Update(ctx, doc); err != nil {
-		log.Error("update configuration failed", zap.Error(err))
-		return err
+	if rows == 0 {
+		return sql.ErrNoRows
 	}
 
 	log.Debug("configuration updated", zap.String("configuration_name", cfg.Name))
@@ -107,49 +105,142 @@ func (s *configurationService) Update(ctx context.Context, cfg *model.Configurat
 }
 
 func (s *configurationService) Delete(ctx context.Context, id uuid.UUID) error {
-	oid, err := bridgeUUIDToObjectID(id)
-	if err != nil {
-		return err
-	}
-	log := logging.LoggerWithContext(ctx).With(
+	log := loggingx.LoggerWithContext(ctx).With(
 		zap.String("operation", "delete_configuration"),
 		zap.String("configuration_id", id.String()),
 	)
 
 	now := time.Now()
-	update := primitive.M{
-		"$set": primitive.M{
-			"deleted_at": now,
-			"updated_at": now,
-		},
-	}
-
-	if err := mongo.Repo.UpdateByID(ctx, &configurationDoc{}, oid, update); err != nil {
+	result, err := store.DB().ExecContext(ctx, `
+		update configurations
+		set deleted_at=$2, updated_at=$2
+		where id = $1 and deleted_at is null
+	`, id, now)
+	if err != nil {
 		log.Error("delete configuration failed", zap.Error(err))
 		return err
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return sql.ErrNoRows
 	}
 
 	log.Info("configuration deleted")
 	return nil
 }
 
-func (s *configurationService) List(ctx context.Context, filter primitive.M) ([]model.Configuration, error) {
-	log := logging.LoggerWithContext(ctx).With(
+func (s *configurationService) List(ctx context.Context, filter ConfigurationListFilter) ([]model.Configuration, error) {
+	log := loggingx.LoggerWithContext(ctx).With(
 		zap.String("operation", "list_configurations"),
 		zap.Any("filter", filter),
 	)
 
-	var docs []configurationDoc
-	if err := mongo.Repo.List(ctx, &configurationDoc{}, filter, &docs); err != nil {
+	query := `
+		select id, application_id, name, env, status, latest_revision_no, latest_revision_id, created_at, updated_at, deleted_at
+		from configurations
+	`
+	clauses := make([]string, 0, 2)
+	args := make([]any, 0, 2)
+
+	if !filter.IncludeDeleted {
+		clauses = append(clauses, "deleted_at is null")
+	}
+	if filter.Name != "" {
+		args = append(args, filter.Name)
+		clauses = append(clauses, placeholderClause("name", len(args)))
+	}
+	if len(clauses) > 0 {
+		query += " where " + strings.Join(clauses, " and ")
+	}
+	query += " order by created_at desc"
+
+	rows, err := store.DB().QueryContext(ctx, query, args...)
+	if err != nil {
 		log.Error("list configurations failed", zap.Error(err))
 		return nil, err
 	}
+	defer rows.Close()
 
-	cfgs := make([]model.Configuration, 0, len(docs))
-	for i := range docs {
-		cfgs = append(cfgs, configFromDoc(&docs[i]))
+	cfgs := make([]model.Configuration, 0)
+	for rows.Next() {
+		cfg, err := scanConfiguration(rows)
+		if err != nil {
+			return nil, err
+		}
+		cfgs = append(cfgs, *cfg)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
 	log.Debug("configurations listed", zap.Int("count", len(cfgs)))
 	return cfgs, nil
+}
+
+func scanConfiguration(scanner interface {
+	Scan(dest ...any) error
+}) (*model.Configuration, error) {
+	var (
+		cfg              model.Configuration
+		applicationID    sql.NullString
+		latestRevisionID sql.NullString
+		deletedAt        sql.NullTime
+	)
+
+	if err := scanner.Scan(
+		&cfg.ID,
+		&applicationID,
+		&cfg.Name,
+		&cfg.Env,
+		&cfg.Status,
+		&cfg.LatestRevisionNo,
+		&latestRevisionID,
+		&cfg.CreatedAt,
+		&cfg.UpdatedAt,
+		&deletedAt,
+	); err != nil {
+		return nil, err
+	}
+
+	if applicationID.Valid {
+		parsed, err := uuid.Parse(applicationID.String)
+		if err != nil {
+			return nil, err
+		}
+		cfg.ApplicationID = parsed
+	}
+	if latestRevisionID.Valid {
+		parsed, err := uuid.Parse(latestRevisionID.String)
+		if err != nil {
+			return nil, err
+		}
+		cfg.LatestRevisionID = &parsed
+	}
+	if deletedAt.Valid {
+		cfg.DeletedAt = &deletedAt.Time
+	}
+
+	return &cfg, nil
+}
+
+func nullableUUID(id uuid.UUID) any {
+	if id == uuid.Nil {
+		return nil
+	}
+	return id
+}
+
+func nullableUUIDPtr(id *uuid.UUID) any {
+	if id == nil || *id == uuid.Nil {
+		return nil
+	}
+	return *id
+}
+
+func placeholderClause(column string, position int) string {
+	return column + " = $" + strconv.Itoa(position)
 }

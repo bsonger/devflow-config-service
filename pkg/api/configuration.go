@@ -8,7 +8,6 @@ import (
 	"github.com/bsonger/devflow-service-common/httpx"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 var ConfigurationRouteApi = NewConfigurationHandler()
@@ -126,12 +125,9 @@ func (h *ConfigurationHandler) Delete(c *gin.Context) {
 // @Success 200 {array} model.Configuration
 // @Router  /api/v1/configurations [get]
 func (h *ConfigurationHandler) List(c *gin.Context) {
-	filter := primitive.M{}
-	if !httpx.IncludeDeleted(c) {
-		filter["deleted_at"] = primitive.M{"$exists": false}
-	}
-	if name := c.Query("name"); name != "" {
-		filter["name"] = name
+	filter := service.ConfigurationListFilter{
+		IncludeDeleted: httpx.IncludeDeleted(c),
+		Name:           c.Query("name"),
 	}
 
 	cfgs, err := service.ConfigurationService.List(c.Request.Context(), filter)
