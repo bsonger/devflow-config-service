@@ -29,6 +29,11 @@ Client
   -> HTTP response
 ```
 
+The target relational model is:
+
+- `Configuration` = mutable identity + latest revision pointer
+- `ConfigurationRevision` = immutable content snapshot
+
 ## Internal Package Layout
 
 - `cmd/main.go`
@@ -54,6 +59,7 @@ Client
 - `Gin`
 - PostgreSQL target persistence
 - `devflow-service-common`
+- transitional Mongo-based handlers/stores still exist outside this model/schema slice
 
 ## Non-Goals
 

@@ -5,17 +5,18 @@
 - owner repo: `devflow-config-service`
 - authoritative model file: `pkg/model/configuration.go`
 - authoritative API doc: `docs/api-spec.md`
-- swagger source: `docs/swagger.yaml`
+- generated swagger: `docs/swagger.yaml` (transitional; still reflects legacy handler layer until API migration)
 
 ## Purpose
 
 `Configuration` 是发布配置元数据资源，供 release 路径消费。
+实际可变内容已经拆分到不可变的 `ConfigurationRevision`。
 
 ## Common base fields
 
 | Field | Type | Required | Writable | Description |
 |---|---|---|---|---|
-| `id` | `ObjectID` | server-generated | no | 主键 |
+| `id` | `uuid.UUID` | server-generated | no | 主键 |
 | `created_at` | `time.Time` | server-generated | no | 创建时间 |
 | `updated_at` | `time.Time` | server-generated | no | 更新时间 |
 | `deleted_at` | `*time.Time` | optional | system-managed | 软删除时间 |
@@ -24,37 +25,57 @@
 
 | Field | Type | Required | Writable | Description |
 |---|---|---|---|---|
-| `name` | `string` | expected on create | user | 配置名 |
-| `files` | `[]*File` | optional | user | 配置文件集合 |
+| `application_id` | `uuid.UUID` | required | user | 所属应用 ID |
+| `name` | `string` | required | user | 配置名 |
+| `env` | `string` | required | user | 目标环境 |
+| `status` | `string` | optional | user/system | 配置状态 |
+| `latest_revision_no` | `int` | system-managed | no | 当前最新 revision 序号 |
+| `latest_revision_id` | `*uuid.UUID` | optional/system-managed | no | 当前最新 revision ID |
 
 ## Nested types
+
+## Related child resource: `ConfigurationRevision`
+
+| Field | Type | Description |
+|---|---|---|
+| `configuration_id` | `uuid.UUID` | 所属配置 |
+| `revision_no` | `int` | 版本号 |
+| `files` | `[]File` | 配置文件快照 |
+| `env_vars` | `[]EnvVar` | 环境变量快照 |
+| `content_hash` | `string` | 内容哈希 |
+| `message` | `string` | 变更说明 |
+| `created_by` | `string` | 创建人 |
+| `created_at` | `time.Time` | 创建时间 |
 
 ### `File`
 - `name: string`
 - `content: string`
 
+### `EnvVar`
+- `name: string`
+- `value: string`
+
 ## Create / update rules
 
 ### Create
-- current API behavior:
-  - handler 绑定整个 `model.Configuration`
-  - 当前未做额外字段级 `binding:"required"` 校验
-- practical required fields:
-  - `name`
+- target relational contract:
+  - required: `application_id`, `name`, `env`
+  - create flow should also materialize the first immutable revision
 - server-managed fields:
   - `id`, `created_at`, `updated_at`
 
 ### Update
 - mutable fields:
-  - `name`, `files`
+  - `name`, `env`, `status`
 - immutable/system-managed fields:
   - `id`, `created_at`, `deleted_at`
+  - `latest_revision_no`, `latest_revision_id`
 
 ## Validation notes
 
-- 路径参数 `id` 必须是合法 ObjectID
+- `application_id` 必须引用存在的 Application
+- revision 一旦创建不可修改
 - 列表默认过滤掉软删除数据
-- 当前实现没有更细的字段级校验规则文档化
 
 ## Source pointers
 

@@ -26,6 +26,7 @@
 
 - list endpoints support the common pagination parameters used in this repo
 - `POST /api/v1/configurations` creates the logical configuration and its first revision together
+- `Configuration` owns identity fields such as `application_id`, `name`, `env`, and revision pointers
 - revisions are immutable once created
 - environment variables belong to `ConfigurationRevision.env_vars`
 - release flows should consume a revision, not mutable configuration state directly
@@ -45,3 +46,7 @@
 ## Boundary Note
 
 For repo scope and non-goals, see `docs/architecture.md`.
+
+## Transitional Note
+
+Generated Swagger artifacts in this repo still reflect the legacy Mongo/ObjectID handler layer and should be regenerated after the API layer adopts the relational contract.

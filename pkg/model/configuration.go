@@ -1,14 +1,16 @@
 package model
 
+import "github.com/google/uuid"
+
 type Configuration struct {
-	BaseModel `bson:",inline" json:",inline"`
-	Name      string  `bson:"name" json:"name"`
-	Files     []*File `bson:"files,omitempty" json:"files,omitempty"`
+	BaseModel
+
+	ApplicationID    uuid.UUID  `json:"application_id" db:"application_id"`
+	Name             string     `json:"name" db:"name"`
+	Env              string     `json:"env" db:"env"`
+	Status           string     `json:"status" db:"status"`
+	LatestRevisionNo int        `json:"latest_revision_no" db:"latest_revision_no"`
+	LatestRevisionID *uuid.UUID `json:"latest_revision_id,omitempty" db:"latest_revision_id"`
 }
 
-type File struct {
-	Name    string `bson:"name" json:"name"`
-	Content string `bson:"content" json:"content"`
-}
-
-func (Configuration) CollectionName() string { return "configuration" }
+func (Configuration) CollectionName() string { return "configurations" }
