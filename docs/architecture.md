@@ -2,8 +2,12 @@
 
 ## Purpose
 
-`devflow-config-service` is the metadata owner for `Configuration`.
-It provides configuration CRUD, configuration content storage, and configuration lookup for release flows.
+`devflow-config-service` is the metadata owner for:
+
+- `Configuration`
+- `ConfigurationRevision`
+
+It provides configuration identity, immutable configuration revisions, environment-variable ownership, and revision lookup for release flows.
 
 ## Architecture Style
 
@@ -20,8 +24,8 @@ router -> api -> service -> store
 Client
   -> router
   -> configuration handler
-  -> configuration service
-  -> Mongo store
+  -> configuration / revision service
+  -> persistence store
   -> HTTP response
 ```
 
@@ -36,18 +40,19 @@ Client
   - route registration
   - middleware wiring
 - `pkg/api`
-  - configuration handlers
+  - configuration / revision handlers
 - `pkg/service`
-  - configuration behavior
+  - configuration identity behavior
+  - revision creation / lookup behavior
 - `pkg/store`
-  - Mongo access
+  - repo-owned configuration persistence
 - `pkg/model`
-  - `Configuration` model
+  - `Configuration`, `ConfigurationRevision`
 
 ## External Dependencies
 
 - `Gin`
-- `MongoDB`
+- PostgreSQL target persistence
 - `devflow-service-common`
 
 ## Non-Goals
@@ -58,3 +63,4 @@ Client
 - `Release`
 - `Intent`
 - verify ingress / writeback
+- service-exposure ownership
