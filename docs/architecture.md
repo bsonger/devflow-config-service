@@ -75,3 +75,9 @@ The target relational model is:
 - `Intent`
 - verify ingress / writeback
 - service-exposure ownership
+
+## Swagger generation
+
+- The `Dockerfile` executes `swag init -g cmd/main.go --parseDependency -o docs/generated/swagger` during the build stage.
+- Keep the generated files under `docs/generated/swagger`; rerun `swag init` whenever handlers/routes change.
+- `scripts/export_service_repo.sh` copies `docs/generated/swagger` so splitted repos inherit the same Swagger bundle.
