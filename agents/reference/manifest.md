@@ -1,27 +1,14 @@
-# Manifest Reference
+# Manifest Reference Redirect
 
-## Purpose
+This file is index-only.
 
-说明 `Manifest`、其 `steps`，以及当前确认的创建链路。
+Authoritative sources:
 
-## Scope
+- `devflow-control/docs/resources/manifest.md`
+- `devflow-control/docs/services/release-service.md`
+- `devflow-release-service/docs/resources/manifest.md`
 
-适用于：
-
-- `Manifest` 资源语义
-- build 相关状态流
-
-## Must
-
-- `Manifest` 表示应用在某个分支与配置下的发布快照
-- 典型字段：
-  - `id`
-  - `execution_intent_id`
-  - `name`
-  - `branch`
-  - `git_repo`
-  - `status`
-  - `steps`
+This file must not define manifest semantics.
 - 状态枚举：
   - `Pending`
   - `Running`

@@ -1,0 +1,125 @@
+definitions:
+  httpx.CreateResponse:
+    properties:
+      execution_intent_id:
+        type: string
+      id:
+        type: string
+    type: object
+  model.Configuration:
+    properties:
+      created_at:
+        type: string
+      deleted_at:
+        type: string
+      files:
+        items:
+          $ref: '#/definitions/model.File'
+        type: array
+      id:
+        type: string
+      name:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  model.File:
+    properties:
+      content:
+        type: string
+      name:
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /api/v1/configurations:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.Configuration'
+            type: array
+      summary: 获取配置列表
+      tags:
+      - Configuration
+    post:
+      consumes:
+      - application/json
+      description: 创建一个新的配置
+      parameters:
+      - description: Configuration Data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/model.Configuration'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httpx.CreateResponse'
+      summary: 创建配置
+      tags:
+      - Configuration
+  /api/v1/configurations/{id}:
+    delete:
+      parameters:
+      - description: Configuration ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: 删除配置
+      tags:
+      - Configuration
+    get:
+      parameters:
+      - description: Configuration ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Configuration'
+      summary: 获取配置
+      tags:
+      - Configuration
+    put:
+      parameters:
+      - description: Configuration ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Configuration Data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/model.Configuration'
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: 更新配置
+      tags:
+      - Configuration
+swagger: "2.0"
