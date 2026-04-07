@@ -17,7 +17,7 @@ var ErrConfigSourceNotFound = errors.New("configuration source path not found")
 var ErrConfigRepositoryUnavailable = errors.New("configuration repository is not configured")
 
 type ConfigRepository interface {
-	ReadSnapshot(ctx context.Context, sourcePath string) (*configrepo.Snapshot, error)
+	ReadSnapshot(ctx context.Context, sourcePath, env string) (*configrepo.Snapshot, error)
 }
 
 type SyncResult struct {
@@ -39,7 +39,7 @@ func (s *configurationService) Sync(ctx context.Context, id uuid.UUID) (*SyncRes
 		return nil, err
 	}
 
-	snapshot, err := s.repo.ReadSnapshot(ctx, cfg.SourcePath)
+	snapshot, err := s.repo.ReadSnapshot(ctx, cfg.SourcePath, cfg.Env)
 	if err != nil {
 		if errors.Is(err, configrepo.ErrSourcePathNotFound) {
 			return nil, ErrConfigSourceNotFound

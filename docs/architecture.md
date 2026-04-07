@@ -8,7 +8,7 @@
 - `ConfigurationRevision`
 
 It provides configuration identity, immutable configuration revisions, environment-variable ownership, and revision lookup for release flows.
-Configuration file content itself now comes from the centralized config repo; this service freezes repo snapshots into immutable revisions.
+Configuration file content itself now comes from the centralized config repo; this service freezes normalized service-level snapshots (`configuration.yaml`, `deployment.yaml`, `service.yaml`, `environments/<env>.yaml`) into immutable revisions.
 
 ## Architecture Style
 
@@ -63,7 +63,7 @@ The target relational model is:
 
 - `Gin`
 - PostgreSQL persistence
-- centralized config repo filesystem layout
+- centralized config repo normalized multi-file layout
 - `devflow-service-common`
 
 ## Swagger generation

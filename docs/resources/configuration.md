@@ -70,14 +70,14 @@
 
 ### Sync
 - `POST /api/v1/configurations/{id}/sync`
-- 从集中配置仓 `source_path/files` 读取当前内容
+- 从集中配置仓 `source_path` 对应的服务目录读取 `configuration.yaml` / `deployment.yaml` / `service.yaml`，并按 `env` 追加 `environments/<env>.yaml`
 - 内容没变化时返回当前最新 revision
 - 内容变化时创建新的不可变 `ConfigurationRevision`
 
 ## Validation notes
 
 - `application_id` 必须引用存在的 Application
-- `source_path` 必须映射到集中配置仓中的有效目录
+- `source_path` 必须映射到集中配置仓中的有效服务目录；环境覆盖文件由 `env` 字段决定
 - revision 一旦创建不可修改
 - 列表默认过滤掉软删除数据
 

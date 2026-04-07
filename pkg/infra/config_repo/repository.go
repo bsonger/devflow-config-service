@@ -7,7 +7,6 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 
 	"github.com/bsonger/devflow-config-service/pkg/domain"
@@ -41,29 +40,16 @@ func NewRepository(opts Options) *Repository {
 	}
 }
 
-func (r *Repository) ReadSnapshot(_ context.Context, sourcePath string) (*Snapshot, error) {
-	filesDir := filepath.Join(r.rootDir, sourcePath, "files")
-	entries, err := os.ReadDir(filesDir)
+func (r *Repository) ReadSnapshot(_ context.Context, sourcePath, env string) (*Snapshot, error) {
+	resolved, err := resolveLayout(r.rootDir, sourcePath, env)
 	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			return nil, ErrSourcePathNotFound
-		}
 		return nil, err
 	}
 
-	names := make([]string, 0, len(entries))
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
-		}
-		names = append(names, entry.Name())
-	}
-	sort.Strings(names)
-
-	files := make([]domain.File, 0, len(names))
+	files := make([]domain.File, 0, len(resolved.Files))
 	hash := sha256.New()
-	for _, name := range names {
-		content, err := os.ReadFile(filepath.Join(filesDir, name))
+	for _, name := range resolved.Files {
+		content, err := os.ReadFile(filepath.Join(resolved.ServiceDir, filepath.FromSlash(name)))
 		if err != nil {
 			return nil, err
 		}
@@ -78,7 +64,7 @@ func (r *Repository) ReadSnapshot(_ context.Context, sourcePath string) (*Snapsh
 	}
 
 	return &Snapshot{
-		SourcePath:   strings.TrimPrefix(filepath.ToSlash(sourcePath), "./"),
+		SourcePath:   strings.TrimPrefix(filepath.ToSlash(resolved.SourcePath), "./"),
 		SourceCommit: r.defaultRefOrMain(),
 		SourceDigest: hex.EncodeToString(hash.Sum(nil)),
 		Files:        files,
