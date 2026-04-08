@@ -9,9 +9,23 @@ BEGIN
   IF NOT EXISTS (
     SELECT 1
     FROM information_schema.columns
-    WHERE table_name = 'configuration_revisions' AND column_name = 'env_vars'
+    WHERE table_name = 'configurations' AND column_name = 'source_path'
   ) THEN
-    RAISE EXCEPTION 'missing column: configuration_revisions.env_vars';
+    RAISE EXCEPTION 'missing column: configurations.source_path';
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_name = 'configuration_revisions' AND column_name = 'source_commit'
+  ) THEN
+    RAISE EXCEPTION 'missing column: configuration_revisions.source_commit';
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_name = 'configuration_revisions' AND column_name = 'source_digest'
+  ) THEN
+    RAISE EXCEPTION 'missing column: configuration_revisions.source_digest';
   END IF;
   IF NOT EXISTS (
     SELECT 1

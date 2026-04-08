@@ -1,0 +1,10 @@
+FROM scratch
+WORKDIR /app
+COPY .build/staging/_shared/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+COPY .build/staging/devflow-config-service/devflow-config-service ./devflow-config-service
+COPY .build/staging/devflow-config-service/docs ./docs
+COPY .build/staging/devflow-config-service/config-repo ./config-repo
+ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+EXPOSE 8082
+USER 65532:65532
+ENTRYPOINT ["/app/devflow-config-service"]
