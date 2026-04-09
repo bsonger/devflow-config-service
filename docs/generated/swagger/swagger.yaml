@@ -1,34 +1,111 @@
 definitions:
-  httpx.CreateResponse:
-    properties:
-      execution_intent_id:
-        type: string
-      id:
-        type: string
+  api.CreateConfigurationRequest:
     type: object
-  model.Configuration:
+  api.UpdateConfigurationRequest:
+    type: object
+  domain.Configuration:
     properties:
+      application_id:
+        type: string
       created_at:
         type: string
       deleted_at:
         type: string
+      env:
+        type: string
       files:
         items:
-          $ref: '#/definitions/model.File'
+          $ref: '#/definitions/domain.ConfigurationFileRef'
         type: array
       id:
         type: string
+      latest_revision_id:
+        type: string
+      latest_revision_no:
+        type: integer
       name:
+        type: string
+      source_path:
         type: string
       updated_at:
         type: string
     type: object
-  model.File:
+  domain.ConfigurationFileRef:
+    properties:
+      name:
+        type: string
+      path:
+        type: string
+      ref:
+        type: string
+      repository:
+        type: string
+    type: object
+  domain.ConfigurationRevision:
+    properties:
+      configuration_id:
+        type: string
+      content_hash:
+        type: string
+      created_at:
+        type: string
+      created_by:
+        type: string
+      files:
+        items:
+          $ref: '#/definitions/domain.File'
+        type: array
+      id:
+        type: string
+      message:
+        type: string
+      revision_no:
+        type: integer
+      source_commit:
+        type: string
+      source_digest:
+        type: string
+    type: object
+  domain.File:
     properties:
       content:
         type: string
       name:
         type: string
+    type: object
+  httpx.DataResponse-domain_Configuration:
+    properties:
+      data:
+        $ref: '#/definitions/domain.Configuration'
+    type: object
+  httpx.DataResponse-domain_ConfigurationRevision:
+    properties:
+      data:
+        $ref: '#/definitions/domain.ConfigurationRevision'
+    type: object
+  httpx.ListResponse-domain_Configuration:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/domain.Configuration'
+        type: array
+      pagination:
+        $ref: '#/definitions/httpx.Pagination'
+    type: object
+  httpx.Pagination:
+    properties:
+      enabled:
+        type: boolean
+      limit:
+        type: integer
+      offset:
+        type: integer
+      page:
+        type: integer
+      page_size:
+        type: integer
+      total:
+        type: integer
     type: object
 info:
   contact: {}
@@ -39,9 +116,7 @@ paths:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/model.Configuration'
-            type: array
+            $ref: '#/definitions/httpx.ListResponse-domain_Configuration'
       summary: 获取配置列表
       tags:
       - Configuration
@@ -55,14 +130,14 @@ paths:
         name: data
         required: true
         schema:
-          $ref: '#/definitions/model.Configuration'
+          $ref: '#/definitions/api.CreateConfigurationRequest'
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
+        "201":
+          description: Created
           schema:
-            $ref: '#/definitions/httpx.CreateResponse'
+            $ref: '#/definitions/httpx.DataResponse-domain_Configuration'
       summary: 创建配置
       tags:
       - Configuration
@@ -75,12 +150,8 @@ paths:
         required: true
         type: string
       responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties:
-              type: string
-            type: object
+        "204":
+          description: No Content
       summary: 删除配置
       tags:
       - Configuration
@@ -95,7 +166,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.Configuration'
+            $ref: '#/definitions/httpx.DataResponse-domain_Configuration'
       summary: 获取配置
       tags:
       - Configuration
@@ -111,15 +182,27 @@ paths:
         name: data
         required: true
         schema:
-          $ref: '#/definitions/model.Configuration'
+          $ref: '#/definitions/api.UpdateConfigurationRequest'
+      responses:
+        "204":
+          description: No Content
+      summary: 更新配置
+      tags:
+      - Configuration
+  /api/v1/configurations/{id}/sync:
+    post:
+      parameters:
+      - description: Configuration ID
+        in: path
+        name: id
+        required: true
+        type: string
       responses:
         "200":
           description: OK
           schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: 更新配置
+            $ref: '#/definitions/httpx.DataResponse-domain_ConfigurationRevision'
+      summary: 从集中配置仓同步配置 revision
       tags:
       - Configuration
 swagger: "2.0"

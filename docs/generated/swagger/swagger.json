@@ -14,10 +14,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/model.Configuration"
-                            }
+                            "$ref": "#/definitions/httpx.ListResponse-domain_Configuration"
                         }
                     }
                 }
@@ -41,15 +38,15 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/model.Configuration"
+                            "$ref": "#/definitions/api.CreateConfigurationRequest"
                         }
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "201": {
+                        "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/httpx.CreateResponse"
+                            "$ref": "#/definitions/httpx.DataResponse-domain_Configuration"
                         }
                     }
                 }
@@ -74,7 +71,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.Configuration"
+                            "$ref": "#/definitions/httpx.DataResponse-domain_Configuration"
                         }
                     }
                 }
@@ -98,19 +95,13 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/model.Configuration"
+                            "$ref": "#/definitions/api.UpdateConfigurationRequest"
                         }
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
+                    "204": {
+                        "description": "No Content"
                     }
                 }
             },
@@ -129,13 +120,32 @@
                     }
                 ],
                 "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
+        "/api/v1/configurations/{id}/sync": {
+            "post": {
+                "tags": [
+                    "Configuration"
+                ],
+                "summary": "从集中配置仓同步配置 revision",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Configuration ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/httpx.DataResponse-domain_ConfigurationRevision"
                         }
                     }
                 }
@@ -143,36 +153,46 @@
         }
     },
     "definitions": {
-        "httpx.CreateResponse": {
+        "api.CreateConfigurationRequest": {
+            "type": "object"
+        },
+        "api.UpdateConfigurationRequest": {
+            "type": "object"
+        },
+        "domain.Configuration": {
             "type": "object",
             "properties": {
-                "execution_intent_id": {
+                "application_id": {
                     "type": "string"
                 },
-                "id": {
-                    "type": "string"
-                }
-            }
-        },
-        "model.Configuration": {
-            "type": "object",
-            "properties": {
                 "created_at": {
                     "type": "string"
                 },
                 "deleted_at": {
                     "type": "string"
                 },
+                "env": {
+                    "type": "string"
+                },
                 "files": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/model.File"
+                        "$ref": "#/definitions/domain.ConfigurationFileRef"
                     }
                 },
                 "id": {
                     "type": "string"
                 },
+                "latest_revision_id": {
+                    "type": "string"
+                },
+                "latest_revision_no": {
+                    "type": "integer"
+                },
                 "name": {
+                    "type": "string"
+                },
+                "source_path": {
                     "type": "string"
                 },
                 "updated_at": {
@@ -180,7 +200,62 @@
                 }
             }
         },
-        "model.File": {
+        "domain.ConfigurationFileRef": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "path": {
+                    "type": "string"
+                },
+                "ref": {
+                    "type": "string"
+                },
+                "repository": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.ConfigurationRevision": {
+            "type": "object",
+            "properties": {
+                "configuration_id": {
+                    "type": "string"
+                },
+                "content_hash": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "created_by": {
+                    "type": "string"
+                },
+                "files": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.File"
+                    }
+                },
+                "id": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "revision_no": {
+                    "type": "integer"
+                },
+                "source_commit": {
+                    "type": "string"
+                },
+                "source_digest": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.File": {
             "type": "object",
             "properties": {
                 "content": {
@@ -188,6 +263,59 @@
                 },
                 "name": {
                     "type": "string"
+                }
+            }
+        },
+        "httpx.DataResponse-domain_Configuration": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/domain.Configuration"
+                }
+            }
+        },
+        "httpx.DataResponse-domain_ConfigurationRevision": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/domain.ConfigurationRevision"
+                }
+            }
+        },
+        "httpx.ListResponse-domain_Configuration": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.Configuration"
+                    }
+                },
+                "pagination": {
+                    "$ref": "#/definitions/httpx.Pagination"
+                }
+            }
+        },
+        "httpx.Pagination": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "limit": {
+                    "type": "integer"
+                },
+                "offset": {
+                    "type": "integer"
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "page_size": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
                 }
             }
         }
