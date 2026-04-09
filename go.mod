@@ -3,7 +3,7 @@ module github.com/bsonger/devflow-config-service
 go 1.25.6
 
 require (
-	github.com/bsonger/devflow-service-common v0.0.0
+	github.com/bsonger/devflow-service-common v0.0.0-20260408172601-3b9b7861d057
 	github.com/gin-contrib/cors v1.7.6
 	github.com/gin-gonic/gin v1.11.0
 	github.com/google/uuid v1.6.1-0.20241114170450-2d3c2a9cc518
@@ -15,8 +15,6 @@ require (
 	go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin v0.64.0
 	go.uber.org/zap v1.27.1
 )
-
-replace github.com/bsonger/devflow-service-common => ../devflow-service-common
 
 require (
 	github.com/KyleBanks/depth v1.2.1 // indirect
