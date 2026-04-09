@@ -9,7 +9,7 @@ import (
 
 func TestConfigurationContract(t *testing.T) {
 	typ := reflect.TypeOf(Configuration{})
-	for _, field := range []string{"ApplicationID", "Name", "Env", "SourcePath", "LatestRevisionNo", "LatestRevisionID"} {
+	for _, field := range []string{"ApplicationID", "Name", "Env", "SourcePath", "Files", "LatestRevisionNo", "LatestRevisionID"} {
 		f, ok := typ.FieldByName(field)
 		if !ok {
 			t.Fatalf("Configuration missing field %s", field)
@@ -17,9 +17,6 @@ func TestConfigurationContract(t *testing.T) {
 		if field == "ApplicationID" && f.Type != reflect.TypeOf(uuid.UUID{}) {
 			t.Fatalf("Configuration.ApplicationID type = %v, want uuid.UUID", f.Type)
 		}
-	}
-	if _, ok := typ.FieldByName("Files"); ok {
-		t.Fatal("Configuration should not own mutable files directly")
 	}
 }
 

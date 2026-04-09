@@ -29,19 +29,21 @@ type ConfigurationHandler struct {
 }
 
 type CreateConfigurationRequest struct {
-	ApplicationID uuid.UUID `json:"application_id"`
-	Name          string    `json:"name"`
-	Env           string    `json:"env"`
-	SourcePath    string    `json:"source_path"`
+	ApplicationID uuid.UUID                     `json:"application_id"`
+	Name          string                        `json:"name"`
+	Env           string                        `json:"env"`
+	SourcePath    string                        `json:"source_path"`
+	Files         []domain.ConfigurationFileRef `json:"files,omitempty"`
 }
 
 type UpdateConfigurationRequest struct {
-	ApplicationID    uuid.UUID  `json:"application_id"`
-	Name             string     `json:"name"`
-	Env              string     `json:"env"`
-	SourcePath       string     `json:"source_path"`
-	LatestRevisionNo int        `json:"latest_revision_no"`
-	LatestRevisionID *uuid.UUID `json:"latest_revision_id,omitempty"`
+	ApplicationID    uuid.UUID                     `json:"application_id"`
+	Name             string                        `json:"name"`
+	Env              string                        `json:"env"`
+	SourcePath       string                        `json:"source_path"`
+	Files            []domain.ConfigurationFileRef `json:"files,omitempty"`
+	LatestRevisionNo int                           `json:"latest_revision_no"`
+	LatestRevisionID *uuid.UUID                    `json:"latest_revision_id,omitempty"`
 }
 
 func NewConfigurationHandler() *ConfigurationHandler {
@@ -71,6 +73,7 @@ func (h *ConfigurationHandler) Create(c *gin.Context) {
 		Name:          req.Name,
 		Env:           req.Env,
 		SourcePath:    req.SourcePath,
+		Files:         req.Files,
 	}
 	cfg.WithCreateDefault()
 
@@ -134,6 +137,7 @@ func (h *ConfigurationHandler) Update(c *gin.Context) {
 		Name:             req.Name,
 		Env:              req.Env,
 		SourcePath:       req.SourcePath,
+		Files:            req.Files,
 		LatestRevisionNo: req.LatestRevisionNo,
 		LatestRevisionID: req.LatestRevisionID,
 	}

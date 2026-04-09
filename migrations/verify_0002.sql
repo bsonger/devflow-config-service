@@ -1,0 +1,2 @@
+ALTER TABLE configurations
+  ADD COLUMN IF NOT EXISTS files JSONB NOT NULL DEFAULT '[]'::jsonb;

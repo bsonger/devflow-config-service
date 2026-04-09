@@ -61,7 +61,7 @@ func TestCreateConfigurationReturnsEnvelope(t *testing.T) {
 	r := gin.New()
 	r.POST("/api/v1/configurations", handler.Create)
 
-	body := bytes.NewBufferString(`{"application_id":"11111111-1111-1111-1111-111111111111","name":"cfg","env":"staging","source_path":"applications/example-app/staging"}`)
+	body := bytes.NewBufferString(`{"application_id":"11111111-1111-1111-1111-111111111111","name":"cfg","env":"staging","source_path":"applications/example-app/staging","files":[{"name":"app.yaml","repository":"github.com/bsonger/devflow-config-repo","ref":"main","path":"applications/example-app/staging/app.yaml"}]}`)
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/configurations", body)
 	req.Header.Set("Content-Type", "application/json")
 	rec := httptest.NewRecorder()
@@ -83,6 +83,9 @@ func TestCreateConfigurationReturnsEnvelope(t *testing.T) {
 	if payload.Data.SourcePath != "applications/example-app/staging" {
 		t.Fatalf("source_path = %q", payload.Data.SourcePath)
 	}
+	if len(payload.Data.Files) != 1 || payload.Data.Files[0].Path != "applications/example-app/staging/app.yaml" {
+		t.Fatalf("unexpected files: %#v", payload.Data.Files)
+	}
 }
 
 func TestListConfigurationsReturnsEnvelope(t *testing.T) {
@@ -94,7 +97,7 @@ func TestListConfigurationsReturnsEnvelope(t *testing.T) {
 					t.Fatalf("unexpected name filter: %q", filter.Name)
 				}
 				return []domain.Configuration{
-					{Name: "cfg-1", Env: "staging"},
+					{Name: "cfg-1", Env: "staging", Files: []domain.ConfigurationFileRef{{Name: "a", Repository: "github.com/bsonger/config", Path: "a"}}},
 					{Name: "cfg-2", Env: "prod"},
 				}, nil
 			},
@@ -198,7 +201,7 @@ func TestUpdateConfigurationNotFoundReturnsErrorEnvelope(t *testing.T) {
 	r.PUT("/api/v1/configurations/:id", handler.Update)
 
 	id := uuid.New()
-	body := bytes.NewBufferString(`{"application_id":"11111111-1111-1111-1111-111111111111","name":"cfg","env":"staging","source_path":"applications/example-app/staging","latest_revision_no":1}`)
+	body := bytes.NewBufferString(`{"application_id":"11111111-1111-1111-1111-111111111111","name":"cfg","env":"staging","source_path":"applications/example-app/staging","files":[{"name":"app.yaml","repository":"github.com/bsonger/devflow-config-repo","path":"applications/example-app/staging/app.yaml"}],"latest_revision_no":1}`)
 	req := httptest.NewRequest(http.MethodPut, "/api/v1/configurations/"+id.String(), body)
 	req.Header.Set("Content-Type", "application/json")
 	rec := httptest.NewRecorder()

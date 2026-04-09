@@ -65,6 +65,7 @@ func testConfiguration() domain.Configuration {
 		Name:             "cfg-1",
 		Env:              "staging",
 		SourcePath:       "applications/example-app/staging",
+		Files:            []domain.ConfigurationFileRef{{Name: "app.yaml", Repository: "github.com/bsonger/devflow-config-repo", Ref: "main", Path: "applications/example-app/staging/app.yaml"}},
 		LatestRevisionNo: 1,
 		LatestRevisionID: &revisionID,
 	}
