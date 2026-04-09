@@ -5,7 +5,6 @@
 `devflow-config-service` defines the converged public API surface for:
 
 - `Configuration`
-- `ConfigurationRevision`
 
 ## Endpoint Groups
 
@@ -17,11 +16,17 @@
 - `PUT /api/v1/configurations/{id}`
 - `DELETE /api/v1/configurations/{id}`
 
+## Swagger
+
+- local UI: `/swagger/index.html`
+- generated source: `docs/generated/swagger/swagger.yaml`
+
 ## Request Rules
 
 - list endpoints use `page` and `page_size`
 - `POST` and `PUT` use request DTOs, not raw domain models
-- writable fields are `application_id`, `name`, `env`, and `source_path`
+- writable fields are `application_id`, `name`, optional `env`, optional `source_path`, and optional `files`
+- `files` stores GitHub-backed file references for later config materialization
 - `POST /api/v1/configurations/{id}/sync` freezes the current config-repo snapshot into an immutable revision
 
 ## Response Rules

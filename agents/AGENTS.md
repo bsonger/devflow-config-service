@@ -1,8 +1,0 @@
-# 当前任务 / 当前上下文
-
-- 任务：维护并完善 Devflow 的 Codex 文档与工程约定。
-- 范围：仅在仓库内新增或更新文档，不改动业务逻辑代码。
-- 输出：补全 `agents/` 目录结构与内容，保持中文、简洁、可执行。
-- 当前仓库边界：`devflow-config-service` 只负责 `Configuration`。
-- Harness：默认 `Planner -> Generator -> Evaluator`，支持时必须真实启动 sub-agent。
-- 优先级：若与 `skills/` 冲突，以此文件为准。
