@@ -22,7 +22,7 @@
 ## Log Fields
 
 - 基础字段：`service`、`trace_id`、`span_id`、`request_id`
-- 资源字段：`configuration_id`
+- 资源字段：`app_config_id`、`workload_config_id`
 
 ## Profile
 

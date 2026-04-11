@@ -16,6 +16,11 @@ var ErrSourcePathNotFound = errors.New("config repo source path not found")
 
 var DefaultRepository *Repository
 
+const (
+	FixedRepositoryURL = "git@github.com:bsonger/devflow-config-service.git"
+	FixedBranch        = "main"
+)
+
 type Options struct {
 	RootDir    string
 	DefaultRef string
@@ -49,7 +54,7 @@ func (r *Repository) ReadSnapshot(_ context.Context, sourcePath, env string) (*S
 	files := make([]domain.File, 0, len(resolved.Files))
 	hash := sha256.New()
 	for _, name := range resolved.Files {
-		content, err := os.ReadFile(filepath.Join(resolved.ServiceDir, filepath.FromSlash(name)))
+		content, err := os.ReadFile(filepath.Join(resolved.Dir, filepath.FromSlash(name)))
 		if err != nil {
 			return nil, err
 		}
@@ -73,7 +78,7 @@ func (r *Repository) ReadSnapshot(_ context.Context, sourcePath, env string) (*S
 
 func (r *Repository) defaultRefOrMain() string {
 	if r == nil || r.defaultRef == "" {
-		return "main"
+		return FixedBranch
 	}
 	return r.defaultRef
 }

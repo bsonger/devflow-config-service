@@ -1,6 +1,7 @@
 package main
 
 import (
+	_ "github.com/bsonger/devflow-config-service/docs/generated/swagger"
 	"github.com/bsonger/devflow-config-service/pkg/infra/config"
 	"github.com/bsonger/devflow-config-service/pkg/router"
 	"github.com/bsonger/devflow-service-common/bootstrap"

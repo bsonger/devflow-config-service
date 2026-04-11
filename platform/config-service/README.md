@@ -16,10 +16,13 @@ For public API shape, ownership, and resource details, prefer:
 
 ## Main local code paths
 
-- configuration routes: `pkg/router/configuration.go`
-- configuration handler: `pkg/api/configuration.go`
-- configuration logic: `pkg/service/configuration.go`
-- runtime config: `pkg/config/config.go`
+- app-config routes: `pkg/router/app_config.go`
+- app-config handler: `pkg/api/app_config.go`
+- app-config logic: `pkg/app/app_config.go`
+- workload-config routes: `pkg/router/workload_config.go`
+- workload-config handler: `pkg/api/workload_config.go`
+- workload-config logic: `pkg/app/workload_config.go`
+- runtime config: `pkg/infra/config/config.go`
 
 ## Platform dependencies
 

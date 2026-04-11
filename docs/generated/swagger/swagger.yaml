@@ -1,9 +1,5 @@
 definitions:
-  api.CreateConfigurationRequest:
-    type: object
-  api.UpdateConfigurationRequest:
-    type: object
-  domain.Configuration:
+  github_com_bsonger_devflow-config-service_pkg_domain.AppConfig:
     properties:
       application_id:
         type: string
@@ -11,11 +7,11 @@ definitions:
         type: string
       deleted_at:
         type: string
-      env:
+      environment_id:
         type: string
       files:
         items:
-          $ref: '#/definitions/domain.ConfigurationFileRef'
+          $ref: '#/definitions/github_com_bsonger_devflow-config-service_pkg_domain.File'
         type: array
       id:
         type: string
@@ -25,40 +21,40 @@ definitions:
         type: integer
       name:
         type: string
+      rendered_configmap:
+        $ref: '#/definitions/github_com_bsonger_devflow-config-service_pkg_domain.RenderedConfigMap'
+      source_commit:
+        type: string
       source_path:
         type: string
       updated_at:
         type: string
     type: object
-  domain.ConfigurationFileRef:
+  github_com_bsonger_devflow-config-service_pkg_domain.AppConfigInput:
     properties:
+      application_id:
+        type: string
+      environment_id:
+        type: string
       name:
         type: string
-      path:
-        type: string
-      ref:
-        type: string
-      repository:
-        type: string
     type: object
-  domain.ConfigurationRevision:
+  github_com_bsonger_devflow-config-service_pkg_domain.AppConfigRevision:
     properties:
-      configuration_id:
+      app_config_id:
         type: string
       content_hash:
         type: string
       created_at:
         type: string
-      created_by:
-        type: string
       files:
         items:
-          $ref: '#/definitions/domain.File'
+          $ref: '#/definitions/github_com_bsonger_devflow-config-service_pkg_domain.File'
         type: array
       id:
         type: string
-      message:
-        type: string
+      rendered_configmap:
+        $ref: '#/definitions/github_com_bsonger_devflow-config-service_pkg_domain.RenderedConfigMap'
       revision_no:
         type: integer
       source_commit:
@@ -66,28 +62,114 @@ definitions:
       source_digest:
         type: string
     type: object
-  domain.File:
+  github_com_bsonger_devflow-config-service_pkg_domain.EnvVar:
+    properties:
+      name:
+        type: string
+      value:
+        type: string
+    type: object
+  github_com_bsonger_devflow-config-service_pkg_domain.File:
     properties:
       content:
         type: string
       name:
         type: string
     type: object
-  httpx.DataResponse-domain_Configuration:
+  github_com_bsonger_devflow-config-service_pkg_domain.RenderedConfigMap:
     properties:
       data:
-        $ref: '#/definitions/domain.Configuration'
+        additionalProperties:
+          type: string
+        type: object
     type: object
-  httpx.DataResponse-domain_ConfigurationRevision:
+  github_com_bsonger_devflow-config-service_pkg_domain.WorkloadConfig:
+    properties:
+      application_id:
+        type: string
+      created_at:
+        type: string
+      deleted_at:
+        type: string
+      env:
+        items:
+          $ref: '#/definitions/github_com_bsonger_devflow-config-service_pkg_domain.EnvVar'
+        type: array
+      environment_id:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      probes:
+        additionalProperties: {}
+        type: object
+      replicas:
+        type: integer
+      resources:
+        additionalProperties: {}
+        type: object
+      strategy:
+        type: string
+      updated_at:
+        type: string
+      workload_type:
+        type: string
+    type: object
+  github_com_bsonger_devflow-config-service_pkg_domain.WorkloadConfigInput:
+    properties:
+      application_id:
+        type: string
+      env:
+        items:
+          $ref: '#/definitions/github_com_bsonger_devflow-config-service_pkg_domain.EnvVar'
+        type: array
+      environment_id:
+        type: string
+      name:
+        type: string
+      probes:
+        additionalProperties: {}
+        type: object
+      replicas:
+        type: integer
+      resources:
+        additionalProperties: {}
+        type: object
+      strategy:
+        type: string
+      workload_type:
+        type: string
+    type: object
+  httpx.DataResponse-github_com_bsonger_devflow-config-service_pkg_domain_AppConfig:
     properties:
       data:
-        $ref: '#/definitions/domain.ConfigurationRevision'
+        $ref: '#/definitions/github_com_bsonger_devflow-config-service_pkg_domain.AppConfig'
     type: object
-  httpx.ListResponse-domain_Configuration:
+  httpx.DataResponse-github_com_bsonger_devflow-config-service_pkg_domain_AppConfigRevision:
+    properties:
+      data:
+        $ref: '#/definitions/github_com_bsonger_devflow-config-service_pkg_domain.AppConfigRevision'
+    type: object
+  httpx.DataResponse-github_com_bsonger_devflow-config-service_pkg_domain_WorkloadConfig:
+    properties:
+      data:
+        $ref: '#/definitions/github_com_bsonger_devflow-config-service_pkg_domain.WorkloadConfig'
+    type: object
+  httpx.ListResponse-github_com_bsonger_devflow-config-service_pkg_domain_AppConfig:
     properties:
       data:
         items:
-          $ref: '#/definitions/domain.Configuration'
+          $ref: '#/definitions/github_com_bsonger_devflow-config-service_pkg_domain.AppConfig'
+        type: array
+      pagination:
+        $ref: '#/definitions/httpx.Pagination'
+    type: object
+  httpx.ListResponse-github_com_bsonger_devflow-config-service_pkg_domain_WorkloadConfig:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/github_com_bsonger_devflow-config-service_pkg_domain.WorkloadConfig'
         type: array
       pagination:
         $ref: '#/definitions/httpx.Pagination'
@@ -110,41 +192,63 @@ definitions:
 info:
   contact: {}
 paths:
-  /api/v1/configurations:
+  /api/v1/app-configs:
     get:
+      parameters:
+      - description: Application ID
+        in: query
+        name: application_id
+        type: string
+      - description: Environment ID
+        in: query
+        name: environment_id
+        type: string
+      - description: Name
+        in: query
+        name: name
+        type: string
+      - description: Page
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/httpx.ListResponse-domain_Configuration'
-      summary: 获取配置列表
+            $ref: '#/definitions/httpx.ListResponse-github_com_bsonger_devflow-config-service_pkg_domain_AppConfig'
+      summary: List app configs
       tags:
-      - Configuration
+      - AppConfig
     post:
       consumes:
       - application/json
-      description: 创建一个新的配置
       parameters:
-      - description: Configuration Data
+      - description: AppConfig data
         in: body
         name: data
         required: true
         schema:
-          $ref: '#/definitions/api.CreateConfigurationRequest'
+          $ref: '#/definitions/github_com_bsonger_devflow-config-service_pkg_domain.AppConfigInput'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/httpx.DataResponse-domain_Configuration'
-      summary: 创建配置
+            $ref: '#/definitions/httpx.DataResponse-github_com_bsonger_devflow-config-service_pkg_domain_AppConfig'
+      summary: Create app config
       tags:
-      - Configuration
-  /api/v1/configurations/{id}:
+      - AppConfig
+  /api/v1/app-configs/{id}:
     delete:
       parameters:
-      - description: Configuration ID
+      - description: AppConfig ID
         in: path
         name: id
         required: true
@@ -152,57 +256,168 @@ paths:
       responses:
         "204":
           description: No Content
-      summary: 删除配置
+      summary: Delete app config
       tags:
-      - Configuration
+      - AppConfig
     get:
       parameters:
-      - description: Configuration ID
+      - description: AppConfig ID
         in: path
         name: id
         required: true
         type: string
+      produces:
+      - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/httpx.DataResponse-domain_Configuration'
-      summary: 获取配置
+            $ref: '#/definitions/httpx.DataResponse-github_com_bsonger_devflow-config-service_pkg_domain_AppConfig'
+      summary: Get app config
       tags:
-      - Configuration
+      - AppConfig
     put:
+      consumes:
+      - application/json
       parameters:
-      - description: Configuration ID
+      - description: AppConfig ID
         in: path
         name: id
         required: true
         type: string
-      - description: Configuration Data
+      - description: AppConfig data
         in: body
         name: data
         required: true
         schema:
-          $ref: '#/definitions/api.UpdateConfigurationRequest'
+          $ref: '#/definitions/github_com_bsonger_devflow-config-service_pkg_domain.AppConfigInput'
       responses:
         "204":
           description: No Content
-      summary: 更新配置
+      summary: Update app config
       tags:
-      - Configuration
-  /api/v1/configurations/{id}/sync:
+      - AppConfig
+  /api/v1/app-configs/{id}/sync-from-repo:
     post:
       parameters:
-      - description: Configuration ID
+      - description: AppConfig ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httpx.DataResponse-github_com_bsonger_devflow-config-service_pkg_domain_AppConfigRevision'
+      summary: Sync app config from fixed config repo
+      tags:
+      - AppConfig
+  /api/v1/workload-configs:
+    get:
+      parameters:
+      - description: Application ID
+        in: query
+        name: application_id
+        type: string
+      - description: Environment ID
+        in: query
+        name: environment_id
+        type: string
+      - description: Name
+        in: query
+        name: name
+        type: string
+      - description: Page
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httpx.ListResponse-github_com_bsonger_devflow-config-service_pkg_domain_WorkloadConfig'
+      summary: List workload configs
+      tags:
+      - WorkloadConfig
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: WorkloadConfig data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_bsonger_devflow-config-service_pkg_domain.WorkloadConfigInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/httpx.DataResponse-github_com_bsonger_devflow-config-service_pkg_domain_WorkloadConfig'
+      summary: Create workload config
+      tags:
+      - WorkloadConfig
+  /api/v1/workload-configs/{id}:
+    delete:
+      parameters:
+      - description: WorkloadConfig ID
         in: path
         name: id
         required: true
         type: string
       responses:
+        "204":
+          description: No Content
+      summary: Delete workload config
+      tags:
+      - WorkloadConfig
+    get:
+      parameters:
+      - description: WorkloadConfig ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/httpx.DataResponse-domain_ConfigurationRevision'
-      summary: 从集中配置仓同步配置 revision
+            $ref: '#/definitions/httpx.DataResponse-github_com_bsonger_devflow-config-service_pkg_domain_WorkloadConfig'
+      summary: Get workload config
       tags:
-      - Configuration
+      - WorkloadConfig
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: WorkloadConfig ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: WorkloadConfig data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_bsonger_devflow-config-service_pkg_domain.WorkloadConfigInput'
+      responses:
+        "204":
+          description: No Content
+      summary: Update workload config
+      tags:
+      - WorkloadConfig
 swagger: "2.0"

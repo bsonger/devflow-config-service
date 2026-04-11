@@ -2,7 +2,7 @@
 
 ## Ownership
 
-- `Configuration` 属于 config-service 独占边界
+- `AppConfig` 和 `WorkloadConfig` 属于 config-service 独占边界
 
 ## Prohibited
 

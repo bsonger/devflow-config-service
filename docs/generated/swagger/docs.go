@@ -15,23 +15,57 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/api/v1/configurations": {
+        "/api/v1/app-configs": {
             "get": {
-                "tags": [
-                    "Configuration"
+                "produces": [
+                    "application/json"
                 ],
-                "summary": "获取配置列表",
+                "tags": [
+                    "AppConfig"
+                ],
+                "summary": "List app configs",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Application ID",
+                        "name": "application_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Environment ID",
+                        "name": "environment_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Name",
+                        "name": "name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/httpx.ListResponse-domain_Configuration"
+                            "$ref": "#/definitions/httpx.ListResponse-github_com_bsonger_devflow-config-service_pkg_domain_AppConfig"
                         }
                     }
                 }
             },
             "post": {
-                "description": "创建一个新的配置",
                 "consumes": [
                     "application/json"
                 ],
@@ -39,17 +73,17 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Configuration"
+                    "AppConfig"
                 ],
-                "summary": "创建配置",
+                "summary": "Create app config",
                 "parameters": [
                     {
-                        "description": "Configuration Data",
+                        "description": "AppConfig data",
                         "name": "data",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/api.CreateConfigurationRequest"
+                            "$ref": "#/definitions/github_com_bsonger_devflow-config-service_pkg_domain.AppConfigInput"
                         }
                     }
                 ],
@@ -57,22 +91,25 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/httpx.DataResponse-domain_Configuration"
+                            "$ref": "#/definitions/httpx.DataResponse-github_com_bsonger_devflow-config-service_pkg_domain_AppConfig"
                         }
                     }
                 }
             }
         },
-        "/api/v1/configurations/{id}": {
+        "/api/v1/app-configs/{id}": {
             "get": {
-                "tags": [
-                    "Configuration"
+                "produces": [
+                    "application/json"
                 ],
-                "summary": "获取配置",
+                "tags": [
+                    "AppConfig"
+                ],
+                "summary": "Get app config",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Configuration ID",
+                        "description": "AppConfig ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -82,31 +119,34 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/httpx.DataResponse-domain_Configuration"
+                            "$ref": "#/definitions/httpx.DataResponse-github_com_bsonger_devflow-config-service_pkg_domain_AppConfig"
                         }
                     }
                 }
             },
             "put": {
-                "tags": [
-                    "Configuration"
+                "consumes": [
+                    "application/json"
                 ],
-                "summary": "更新配置",
+                "tags": [
+                    "AppConfig"
+                ],
+                "summary": "Update app config",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Configuration ID",
+                        "description": "AppConfig ID",
                         "name": "id",
                         "in": "path",
                         "required": true
                     },
                     {
-                        "description": "Configuration Data",
+                        "description": "AppConfig data",
                         "name": "data",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/api.UpdateConfigurationRequest"
+                            "$ref": "#/definitions/github_com_bsonger_devflow-config-service_pkg_domain.AppConfigInput"
                         }
                     }
                 ],
@@ -118,13 +158,13 @@ const docTemplate = `{
             },
             "delete": {
                 "tags": [
-                    "Configuration"
+                    "AppConfig"
                 ],
-                "summary": "删除配置",
+                "summary": "Delete app config",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Configuration ID",
+                        "description": "AppConfig ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -137,16 +177,19 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/configurations/{id}/sync": {
+        "/api/v1/app-configs/{id}/sync-from-repo": {
             "post": {
-                "tags": [
-                    "Configuration"
+                "produces": [
+                    "application/json"
                 ],
-                "summary": "从集中配置仓同步配置 revision",
+                "tags": [
+                    "AppConfig"
+                ],
+                "summary": "Sync app config from fixed config repo",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Configuration ID",
+                        "description": "AppConfig ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -156,21 +199,177 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/httpx.DataResponse-domain_ConfigurationRevision"
+                            "$ref": "#/definitions/httpx.DataResponse-github_com_bsonger_devflow-config-service_pkg_domain_AppConfigRevision"
                         }
+                    }
+                }
+            }
+        },
+        "/api/v1/workload-configs": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "WorkloadConfig"
+                ],
+                "summary": "List workload configs",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Application ID",
+                        "name": "application_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Environment ID",
+                        "name": "environment_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Name",
+                        "name": "name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/httpx.ListResponse-github_com_bsonger_devflow-config-service_pkg_domain_WorkloadConfig"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "WorkloadConfig"
+                ],
+                "summary": "Create workload config",
+                "parameters": [
+                    {
+                        "description": "WorkloadConfig data",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_bsonger_devflow-config-service_pkg_domain.WorkloadConfigInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/httpx.DataResponse-github_com_bsonger_devflow-config-service_pkg_domain_WorkloadConfig"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/workload-configs/{id}": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "WorkloadConfig"
+                ],
+                "summary": "Get workload config",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "WorkloadConfig ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/httpx.DataResponse-github_com_bsonger_devflow-config-service_pkg_domain_WorkloadConfig"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "WorkloadConfig"
+                ],
+                "summary": "Update workload config",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "WorkloadConfig ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "WorkloadConfig data",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_bsonger_devflow-config-service_pkg_domain.WorkloadConfigInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "WorkloadConfig"
+                ],
+                "summary": "Delete workload config",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "WorkloadConfig ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
                     }
                 }
             }
         }
     },
     "definitions": {
-        "api.CreateConfigurationRequest": {
-            "type": "object"
-        },
-        "api.UpdateConfigurationRequest": {
-            "type": "object"
-        },
-        "domain.Configuration": {
+        "github_com_bsonger_devflow-config-service_pkg_domain.AppConfig": {
             "type": "object",
             "properties": {
                 "application_id": {
@@ -182,13 +381,13 @@ const docTemplate = `{
                 "deleted_at": {
                     "type": "string"
                 },
-                "env": {
+                "environment_id": {
                     "type": "string"
                 },
                 "files": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/domain.ConfigurationFileRef"
+                        "$ref": "#/definitions/github_com_bsonger_devflow-config-service_pkg_domain.File"
                     }
                 },
                 "id": {
@@ -203,6 +402,12 @@ const docTemplate = `{
                 "name": {
                     "type": "string"
                 },
+                "rendered_configmap": {
+                    "$ref": "#/definitions/github_com_bsonger_devflow-config-service_pkg_domain.RenderedConfigMap"
+                },
+                "source_commit": {
+                    "type": "string"
+                },
                 "source_path": {
                     "type": "string"
                 },
@@ -211,27 +416,24 @@ const docTemplate = `{
                 }
             }
         },
-        "domain.ConfigurationFileRef": {
+        "github_com_bsonger_devflow-config-service_pkg_domain.AppConfigInput": {
             "type": "object",
             "properties": {
+                "application_id": {
+                    "type": "string"
+                },
+                "environment_id": {
+                    "type": "string"
+                },
                 "name": {
-                    "type": "string"
-                },
-                "path": {
-                    "type": "string"
-                },
-                "ref": {
-                    "type": "string"
-                },
-                "repository": {
                     "type": "string"
                 }
             }
         },
-        "domain.ConfigurationRevision": {
+        "github_com_bsonger_devflow-config-service_pkg_domain.AppConfigRevision": {
             "type": "object",
             "properties": {
-                "configuration_id": {
+                "app_config_id": {
                     "type": "string"
                 },
                 "content_hash": {
@@ -240,20 +442,17 @@ const docTemplate = `{
                 "created_at": {
                     "type": "string"
                 },
-                "created_by": {
-                    "type": "string"
-                },
                 "files": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/domain.File"
+                        "$ref": "#/definitions/github_com_bsonger_devflow-config-service_pkg_domain.File"
                     }
                 },
                 "id": {
                     "type": "string"
                 },
-                "message": {
-                    "type": "string"
+                "rendered_configmap": {
+                    "$ref": "#/definitions/github_com_bsonger_devflow-config-service_pkg_domain.RenderedConfigMap"
                 },
                 "revision_no": {
                     "type": "integer"
@@ -266,7 +465,18 @@ const docTemplate = `{
                 }
             }
         },
-        "domain.File": {
+        "github_com_bsonger_devflow-config-service_pkg_domain.EnvVar": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_bsonger_devflow-config-service_pkg_domain.File": {
             "type": "object",
             "properties": {
                 "content": {
@@ -277,29 +487,148 @@ const docTemplate = `{
                 }
             }
         },
-        "httpx.DataResponse-domain_Configuration": {
+        "github_com_bsonger_devflow-config-service_pkg_domain.RenderedConfigMap": {
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/domain.Configuration"
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
                 }
             }
         },
-        "httpx.DataResponse-domain_ConfigurationRevision": {
+        "github_com_bsonger_devflow-config-service_pkg_domain.WorkloadConfig": {
+            "type": "object",
+            "properties": {
+                "application_id": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "deleted_at": {
+                    "type": "string"
+                },
+                "env": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_bsonger_devflow-config-service_pkg_domain.EnvVar"
+                    }
+                },
+                "environment_id": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "probes": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "replicas": {
+                    "type": "integer"
+                },
+                "resources": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "strategy": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "workload_type": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_bsonger_devflow-config-service_pkg_domain.WorkloadConfigInput": {
+            "type": "object",
+            "properties": {
+                "application_id": {
+                    "type": "string"
+                },
+                "env": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_bsonger_devflow-config-service_pkg_domain.EnvVar"
+                    }
+                },
+                "environment_id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "probes": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "replicas": {
+                    "type": "integer"
+                },
+                "resources": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "strategy": {
+                    "type": "string"
+                },
+                "workload_type": {
+                    "type": "string"
+                }
+            }
+        },
+        "httpx.DataResponse-github_com_bsonger_devflow-config-service_pkg_domain_AppConfig": {
             "type": "object",
             "properties": {
                 "data": {
-                    "$ref": "#/definitions/domain.ConfigurationRevision"
+                    "$ref": "#/definitions/github_com_bsonger_devflow-config-service_pkg_domain.AppConfig"
                 }
             }
         },
-        "httpx.ListResponse-domain_Configuration": {
+        "httpx.DataResponse-github_com_bsonger_devflow-config-service_pkg_domain_AppConfigRevision": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/github_com_bsonger_devflow-config-service_pkg_domain.AppConfigRevision"
+                }
+            }
+        },
+        "httpx.DataResponse-github_com_bsonger_devflow-config-service_pkg_domain_WorkloadConfig": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/github_com_bsonger_devflow-config-service_pkg_domain.WorkloadConfig"
+                }
+            }
+        },
+        "httpx.ListResponse-github_com_bsonger_devflow-config-service_pkg_domain_AppConfig": {
             "type": "object",
             "properties": {
                 "data": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/domain.Configuration"
+                        "$ref": "#/definitions/github_com_bsonger_devflow-config-service_pkg_domain.AppConfig"
+                    }
+                },
+                "pagination": {
+                    "$ref": "#/definitions/httpx.Pagination"
+                }
+            }
+        },
+        "httpx.ListResponse-github_com_bsonger_devflow-config-service_pkg_domain_WorkloadConfig": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_bsonger_devflow-config-service_pkg_domain.WorkloadConfig"
                     }
                 },
                 "pagination": {

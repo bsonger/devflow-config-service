@@ -79,7 +79,7 @@ func InitRuntime(ctx context.Context, config *Config, serviceName string) (func(
 
 	store.InitPostgres(db)
 	configrepo.DefaultRepository = ResolveConfigRepo(config)
-	app.ConfigureConfigRepository(configrepo.DefaultRepository)
+	app.ConfigureAppConfigRepository(configrepo.DefaultRepository)
 	return func(shutdownCtx context.Context) error {
 		closeErr := db.Close()
 		shutdownErr := shutdown(shutdownCtx)

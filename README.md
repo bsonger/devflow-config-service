@@ -1,13 +1,13 @@
 # DevFlow Config Service
 
-`devflow-config-service` is the backend owner for `Configuration`.
+`devflow-config-service` is the backend owner for `AppConfig` and `WorkloadConfig`.
 
 ## Backend Role
 
-- own `Configuration`
-- provide configuration metadata and content lookup
-- act as a release-input source for other services and the future platform
-- read normalized `applications/devflow-platform/services/<service>/` config-repo layouts plus environment overlays
+- own `AppConfig` and `WorkloadConfig`
+- provide app-level config identity plus explicit `sync-from-repo`
+- act as a release-input source for other services and the platform
+- read config files from the fixed repo `git@github.com:bsonger/devflow-config-service.git` on branch `main`
 
 ## Local Run
 
@@ -15,6 +15,7 @@
 - `go build ./cmd/main.go`
 - `go test ./...`
 - Swagger UI: `/swagger/index.html`
+- Staging Swagger UI: `/api/v1/config/swagger/index.html`
 
 ## Key Docs
 

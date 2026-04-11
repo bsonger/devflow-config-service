@@ -1,16 +1,15 @@
 package config_repo
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 )
 
 type layoutResolution struct {
 	SourcePath string
-	ServiceDir string
-	Env        string
+	Dir        string
 	Files      []string
 }
 
@@ -19,51 +18,29 @@ func resolveLayout(rootDir, sourcePath, env string) (*layoutResolution, error) {
 	if normalizedSource == "." || normalizedSource == "" {
 		return nil, ErrSourcePathNotFound
 	}
-
-	cleanEnv := strings.TrimSpace(env)
-	serviceRel := normalizedSource
-
-	if strings.HasSuffix(normalizedSource, ".yaml") {
-		dir := filepath.ToSlash(filepath.Dir(normalizedSource))
-		if filepath.Base(dir) == "environments" {
-			serviceRel = filepath.ToSlash(filepath.Dir(dir))
-			cleanEnv = strings.TrimSuffix(filepath.Base(normalizedSource), filepath.Ext(normalizedSource))
-		} else {
-			serviceRel = dir
-		}
-	} else if filepath.Base(filepath.ToSlash(filepath.Dir(normalizedSource))) == "environments" {
-		serviceRel = filepath.ToSlash(filepath.Dir(filepath.Dir(normalizedSource)))
-		cleanEnv = filepath.Base(normalizedSource)
-	}
-
-	if cleanEnv == "" {
-		return nil, fmt.Errorf("environment is required for normalized config repo layout")
-	}
-
-	serviceDir := filepath.Join(rootDir, filepath.FromSlash(serviceRel))
-	if info, err := os.Stat(serviceDir); err != nil || !info.IsDir() {
+	dir := filepath.Join(rootDir, filepath.FromSlash(normalizedSource))
+	if info, err := os.Stat(dir); err != nil || !info.IsDir() {
 		return nil, ErrSourcePathNotFound
 	}
-
-	files := []string{
-		"configuration.yaml",
-		"deployment.yaml",
-		"service.yaml",
-		filepath.ToSlash(filepath.Join("environments", cleanEnv+".yaml")),
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil, err
 	}
-	for _, name := range files {
-		if _, err := os.Stat(filepath.Join(serviceDir, filepath.FromSlash(name))); err != nil {
-			if os.IsNotExist(err) {
-				return nil, ErrSourcePathNotFound
-			}
-			return nil, err
+	files := make([]string, 0, len(entries))
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
 		}
+		files = append(files, entry.Name())
 	}
+	if len(files) == 0 {
+		return nil, ErrSourcePathNotFound
+	}
+	sort.Strings(files)
 
 	return &layoutResolution{
 		SourcePath: normalizedSource,
-		ServiceDir: serviceDir,
-		Env:        cleanEnv,
+		Dir:        dir,
 		Files:      files,
 	}, nil
 }

@@ -4,11 +4,12 @@
 
 `devflow-config-service` is the metadata owner for:
 
-- `Configuration`
-- `ConfigurationRevision`
+- `AppConfig`
+- `AppConfigRevision`
+- `WorkloadConfig`
 
-It provides configuration identity, immutable configuration revisions, environment-variable ownership, and revision lookup for release flows.
-Configuration file content itself now comes from the centralized config repo; this service freezes normalized service-level snapshots (`configuration.yaml`, `deployment.yaml`, `service.yaml`, `environments/<env>.yaml`) into immutable revisions.
+It provides app-config identity, immutable app-config revisions, and workload template ownership for release flows.
+App config file content is read from the fixed repo `git@github.com:bsonger/devflow-config-service.git` on branch `main`, using a derived path based on `application_id + environment_id`.
 
 ## Architecture Style
 
@@ -25,8 +26,8 @@ router -> api -> app -> infra/store
 ```text
 Client
   -> router
-  -> configuration handler
-  -> configuration / revision app service
+  -> app-config / workload-config handler
+  -> app-config / revision / workload-config app service
   -> config repo snapshot reader
   -> persistence store
   -> HTTP response
@@ -34,8 +35,9 @@ Client
 
 The target relational model is:
 
-- `Configuration` = mutable identity + source path + latest revision pointer
-- `ConfigurationRevision` = immutable repo-derived content snapshot
+- `AppConfig` = mutable identity + derived source path + latest revision pointer
+- `AppConfigRevision` = immutable repo-derived file snapshot
+- `WorkloadConfig` = runtime template plus strategy type
 
 ## Internal Package Layout
 
@@ -48,22 +50,23 @@ The target relational model is:
   - route registration
   - middleware wiring
 - `pkg/api`
-  - configuration / revision handlers
+  - app-config / workload-config handlers
 - `pkg/app`
-  - configuration identity behavior
+  - app-config identity behavior
   - explicit sync / revision freeze behavior
+  - workload-config behavior
 - `pkg/infra/store`
-  - repo-owned configuration persistence
+  - repo-owned app-config / workload-config persistence
 - `pkg/infra/config_repo`
   - centralized config repo snapshot loading
 - `pkg/domain`
-  - `Configuration`, `ConfigurationRevision`
+  - `AppConfig`, `AppConfigRevision`, `WorkloadConfig`
 
 ## External Dependencies
 
 - `Gin`
 - PostgreSQL persistence
-- centralized config repo normalized multi-file layout
+- fixed config repo checkout from `git@github.com:bsonger/devflow-config-service.git` (`main`)
 - `devflow-service-common`
 
 ## Swagger generation
@@ -76,14 +79,12 @@ The target relational model is:
 
 - `Project`
 - `Application`
-- `Manifest`
+- `Image`
 - `Release`
 - `Intent`
 - verify ingress / writeback
-- service-exposure ownership
-
-## Swagger generation
+- service / route ownership
 
 - The `Dockerfile` executes `swag init -g cmd/main.go --parseDependency -o docs/generated/swagger` during the build stage.
-- Keep the generated files under `docs/generated/swagger`; rerun `swag init` whenever handlers/routes change.
-- `scripts/export_service_repo.sh` copies `docs/generated/swagger` so splitted repos inherit the same Swagger bundle.
+- Keep the generated files under `docs/generated/swagger`; rerun `swag init` whenever handlers or routes change.
+- `scripts/export_service_repo.sh` copies `docs/generated/swagger` so split repos inherit the same Swagger bundle.
