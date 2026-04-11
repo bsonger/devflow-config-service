@@ -1,30 +1,44 @@
 # Observability
 
-## Mandatory Rule
+## Purpose
 
-只要涉及调用其他服务或外部系统，就必须同时产出：
+`devflow-config-service` emits the shared backend telemetry baseline plus config-sync and workload-template context.
 
-- metrics
-- trace
-- structured log
+## Logs
 
-## Inbound HTTP
+Required structured fields:
+- `resource`
+- `resource_id`
+- `application_id`
+- `app_config_id`
+- `workload_config_id`
+- `result`
+- `error_code`
 
-- 所有业务请求必须有 server span
-- 记录请求次数、耗时、错误数
-- `/metrics`、`/healthz`、`/readyz`、`/debug/pprof/*` 不计入业务指标
+## Metrics
 
-## Outbound
+- use shared `devflow_http_*` ingress metrics
+- if outbound repo sync or other dependencies are added, also emit `devflow_dependency_*` metrics
+- forbid high-cardinality labels such as commit hashes, raw paths, or full repo URLs
 
-- 当前 config-service 主路径没有必须的跨服务调用
-- 若后续增加出站调用，必须补齐 client span、调用计数、延迟、错误计数和结构化日志
+## Tracing
 
-## Log Fields
+- every business HTTP request should create a server span
+- any future outbound Git or service calls must emit client spans with propagated trace context
+- attach config resource identifiers as span attributes, not metric labels
 
-- 基础字段：`service`、`trace_id`、`span_id`、`request_id`
-- 资源字段：`app_config_id`、`workload_config_id`
+## Health and readiness
 
-## Profile
+- expose `/healthz`, `/readyz`, and `/metrics`
+- keep diagnostics endpoints out of business counters/histograms
 
-- `pprof` 和 Pyroscope 都是显式开启的诊断能力
-- 当前仓没有额外 repo-local telemetry 扩展
+## Failure modes
+
+Watch for:
+- repo sync failures
+- render/configmap snapshot failures
+- workload template validation errors
+
+## Dashboards and runbooks
+
+Use the shared backend dashboard/runbook set until repo-specific views exist.
