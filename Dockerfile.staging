@@ -11,12 +11,14 @@ WORKDIR /workspace/devflow-config-service
 RUN go mod download
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /out/devflow-config-service ./cmd
 
-FROM scratch
+FROM alpine:3.22
 WORKDIR /app
+RUN apk add --no-cache git openssh-client ca-certificates
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=builder /out/devflow-config-service ./devflow-config-service
 COPY --from=builder /workspace/devflow-config-service/docs ./docs
 COPY --from=builder /workspace/devflow-config-repo ./config-repo
 EXPOSE 8082
-USER 65532:65532
+RUN adduser -D devuser
+USER devuser
 ENTRYPOINT ["/app/devflow-config-service"]

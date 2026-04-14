@@ -19,6 +19,7 @@ var AppConfigService = NewAppConfigService(nil)
 
 var ErrConfigSourceNotFound = errors.New("configuration source path not found")
 var ErrConfigRepositoryUnavailable = errors.New("configuration repository is not configured")
+var ErrConfigRepositorySyncFailed = errors.New("configuration repository sync failed")
 
 type AppConfigListFilter struct {
 	ApplicationID  *uuid.UUID
@@ -177,6 +178,9 @@ func (s *appConfigService) Sync(ctx context.Context, id uuid.UUID) (*AppConfigSy
 	if err != nil {
 		if errors.Is(err, configrepo.ErrSourcePathNotFound) {
 			return nil, ErrConfigSourceNotFound
+		}
+		if errors.Is(err, configrepo.ErrRepositorySyncFailed) {
+			return nil, fmt.Errorf("%w: %v", ErrConfigRepositorySyncFailed, err)
 		}
 		return nil, err
 	}

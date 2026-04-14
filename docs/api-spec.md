@@ -34,10 +34,10 @@
 - list endpoints use `page` and `page_size`
 - `POST` and `PUT` use request DTOs, not raw domain models
 - `AppConfig` writable fields are `application_id`, `environment_id`, and `name`
-- `AppConfig` source repo is fixed to `git@github.com:bsonger/devflow-config-service.git`
+- `AppConfig` source repo is fixed to `git@github.com:bsonger/devflow-config-repo.git`
 - `AppConfig` source branch is fixed to `main`
 - `AppConfig` source path is derived from `application_id + environment_id`
-- `POST /api/v1/app-configs/{id}/sync-from-repo` freezes the current repo snapshot into an immutable revision
+- `POST /api/v1/app-configs/{id}/sync-from-repo` pulls the latest `origin/main`, then freezes the current repo snapshot into an immutable revision
 - `WorkloadConfig` writable fields are `application_id`, optional `environment_id`, `name`, `replicas`, `resources`, `probes`, `env`, `workload_type`, and `strategy`
 
 ## Response Rules
@@ -54,7 +54,7 @@
 ## Error Rules
 
 - invalid ID or request body -> `400 invalid_argument`
-- missing config repo checkout or missing derived source path -> `424 failed_precondition`
+- missing config repo checkout, repo pull failure, or missing derived source path -> `424 failed_precondition`
 - resource not found -> `404 not_found`
 - storage or uncategorized internal error -> `500 internal`
 

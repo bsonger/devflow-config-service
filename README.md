@@ -7,7 +7,8 @@
 - own `AppConfig` and `WorkloadConfig`
 - provide app-level config identity plus explicit `sync-from-repo`
 - act as a release-input source for other services and the platform
-- read config files from the fixed repo `git@github.com:bsonger/devflow-config-service.git` on branch `main`
+- read config files from the fixed repo `git@github.com:bsonger/devflow-config-repo.git` on branch `main`
+- `sync-from-repo` pulls the latest `main` before freezing a revision
 
 ## Local Run
 

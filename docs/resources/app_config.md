@@ -70,7 +70,8 @@
 
 ### Sync
 - `POST /api/v1/app-configs/{id}/sync-from-repo`
-- 固定从 `git@github.com:bsonger/devflow-config-service.git` 的 `main` 分支读取
+- 固定从 `git@github.com:bsonger/devflow-config-repo.git` 的 `main` 分支读取
+- 在冻结 revision 前先执行一次 `origin/main` 的快进拉取
 - 路径由 `application_id + environment_id` 推导
 - 内容没变化时返回当前最新 revision
 - 内容变化时创建新的不可变 `AppConfigRevision`

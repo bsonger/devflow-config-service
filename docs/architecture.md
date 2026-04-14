@@ -9,7 +9,7 @@
 - `WorkloadConfig`
 
 It provides app-config identity, immutable app-config revisions, and workload template ownership for release flows.
-App config file content is read from the fixed repo `git@github.com:bsonger/devflow-config-service.git` on branch `main`, using a derived path based on `application_id + environment_id`.
+App config file content is read from the fixed repo `git@github.com:bsonger/devflow-config-repo.git` on branch `main`, using a derived path based on `application_id + environment_id`.
 
 ## Architecture Style
 
@@ -66,7 +66,7 @@ The target relational model is:
 
 - `Gin`
 - PostgreSQL persistence
-- fixed config repo checkout from `git@github.com:bsonger/devflow-config-service.git` (`main`)
+- fixed config repo checkout from `git@github.com:bsonger/devflow-config-repo.git` (`main`)
 - `devflow-service-common`
 
 ## Swagger generation

@@ -11,8 +11,6 @@ log:
 otel:
   endpoint: "collector.open-telemetry.svc.cluster.local:4317"
   service_name: "devflow-platform"
-repo:
-  address: "https://github.com/bsonger/manifests.git"
-  path: "manifests"
-consul:
-  key: app/devflow
+config_repo:
+  root_dir: "/app/config-repo"
+  default_ref: "main"

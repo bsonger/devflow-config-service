@@ -182,7 +182,7 @@ func (h *AppConfigHandler) Sync(c *gin.Context) {
 		switch {
 		case errors.Is(err, sql.ErrNoRows):
 			httpx.WriteError(c, http.StatusNotFound, "not_found", "not found", nil)
-		case errors.Is(err, app.ErrConfigSourceNotFound), errors.Is(err, app.ErrConfigRepositoryUnavailable):
+		case errors.Is(err, app.ErrConfigSourceNotFound), errors.Is(err, app.ErrConfigRepositoryUnavailable), errors.Is(err, app.ErrConfigRepositorySyncFailed):
 			httpx.WriteError(c, http.StatusFailedDependency, "failed_precondition", err.Error(), nil)
 		default:
 			httpx.WriteError(c, http.StatusInternalServerError, "internal", err.Error(), nil)

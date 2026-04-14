@@ -2,9 +2,25 @@ package config_repo
 
 import (
 	"context"
+	"errors"
+	"os"
 	"path/filepath"
 	"testing"
 )
+
+type stubGitSyncer struct {
+	commit string
+	err    error
+	calls  []string
+}
+
+func (s *stubGitSyncer) Sync(_ context.Context, rootDir, ref string) (string, error) {
+	s.calls = append(s.calls, rootDir+"@"+ref)
+	if s.err != nil {
+		return "", s.err
+	}
+	return s.commit, nil
+}
 
 func TestRepositoryReadSnapshot(t *testing.T) {
 	repo := NewRepository(Options{
@@ -30,5 +46,63 @@ func TestRepositoryReadSnapshot(t *testing.T) {
 	}
 	if snapshot.SourceDigest == "" {
 		t.Fatal("SourceDigest should not be empty")
+	}
+}
+
+func TestRepositoryReadSnapshotPullsGitRepoBeforeReading(t *testing.T) {
+	rootDir := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(rootDir, ".git"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	sourceDir := filepath.Join(rootDir, "apps/11111111-1111-1111-1111-111111111111/staging/configmap")
+	if err := os.MkdirAll(sourceDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(sourceDir, "app.yaml"), []byte("foo: bar\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	syncer := &stubGitSyncer{commit: "abc123def456"}
+	repo := NewRepository(Options{
+		RootDir:    rootDir,
+		DefaultRef: "main",
+	})
+	repo.syncer = syncer
+
+	snapshot, err := repo.ReadSnapshot(context.Background(), "apps/11111111-1111-1111-1111-111111111111/staging/configmap", "staging")
+	if err != nil {
+		t.Fatalf("ReadSnapshot returned error: %v", err)
+	}
+	if len(syncer.calls) != 1 {
+		t.Fatalf("sync calls = %d, want 1", len(syncer.calls))
+	}
+	if got := syncer.calls[0]; got != rootDir+"@main" {
+		t.Fatalf("sync call = %q, want %q", got, rootDir+"@main")
+	}
+	if snapshot.SourceCommit != "abc123def456" {
+		t.Fatalf("SourceCommit = %q, want %q", snapshot.SourceCommit, "abc123def456")
+	}
+}
+
+func TestRepositoryReadSnapshotReturnsSyncError(t *testing.T) {
+	rootDir := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(rootDir, ".git"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	sourceDir := filepath.Join(rootDir, "apps/11111111-1111-1111-1111-111111111111/staging/configmap")
+	if err := os.MkdirAll(sourceDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(sourceDir, "app.yaml"), []byte("foo: bar\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	repo := NewRepository(Options{
+		RootDir:    rootDir,
+		DefaultRef: "main",
+	})
+	repo.syncer = &stubGitSyncer{err: errors.New("pull failed")}
+
+	_, err := repo.ReadSnapshot(context.Background(), "apps/11111111-1111-1111-1111-111111111111/staging/configmap", "staging")
+	if !errors.Is(err, ErrRepositorySyncFailed) {
+		t.Fatalf("err = %v, want ErrRepositorySyncFailed", err)
 	}
 }

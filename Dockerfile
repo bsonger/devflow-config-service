@@ -26,7 +26,8 @@ FROM alpine:3.22
 
 WORKDIR /app
 
-RUN apk upgrade --no-cache libcrypto3 libssl3
+RUN apk upgrade --no-cache libcrypto3 libssl3 && \
+    apk add --no-cache git openssh-client ca-certificates
 
 COPY --from=builder /app/devflow-config-service ./devflow-config-service
 COPY --from=builder /app/docs ./docs
