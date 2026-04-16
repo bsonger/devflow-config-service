@@ -12,6 +12,10 @@ type AppConfig struct {
 	ApplicationID     uuid.UUID         `json:"application_id" db:"application_id"`
 	EnvironmentID     string            `json:"environment_id" db:"env"`
 	Name              string            `json:"name" db:"name"`
+	Description       string            `json:"description,omitempty" db:"description"`
+	Format            string            `json:"format,omitempty" db:"format"`
+	Data              string            `json:"data,omitempty" db:"data"`
+	Labels            []LabelItem       `json:"labels,omitempty" db:"labels"`
 	SourcePath        string            `json:"source_path" db:"source_path"`
 	LatestRevisionNo  int               `json:"latest_revision_no" db:"latest_revision_no"`
 	LatestRevisionID  *uuid.UUID        `json:"latest_revision_id,omitempty" db:"latest_revision_id"`
@@ -33,7 +37,11 @@ type AppConfigRevision struct {
 }
 
 type AppConfigInput struct {
-	ApplicationID uuid.UUID `json:"application_id"`
-	EnvironmentID string    `json:"environment_id"`
-	Name          string    `json:"name"`
+	ApplicationID uuid.UUID   `json:"application_id"`
+	EnvironmentID string      `json:"environment_id"`
+	Name          string      `json:"name"`
+	Description   string      `json:"description,omitempty"`
+	Format        string      `json:"format,omitempty"`
+	Data          string      `json:"data,omitempty"`
+	Labels        []LabelItem `json:"labels,omitempty"`
 }

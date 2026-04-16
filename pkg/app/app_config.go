@@ -56,9 +56,9 @@ func (s *appConfigService) Create(ctx context.Context, cfg *domain.AppConfig) (u
 	cfg.SourcePath = deriveAppConfigSourcePath(cfg.ApplicationID, cfg.EnvironmentID)
 	_, err := store.DB().ExecContext(ctx, `
 		insert into configurations (
-			id, application_id, name, env, source_path, files, latest_revision_no, latest_revision_id, created_at, updated_at, deleted_at
-		) values ($1,$2,$3,$4,$5,'[]'::jsonb,$6,$7,$8,$9,$10)
-	`, cfg.ID, cfg.ApplicationID, cfg.Name, cfg.EnvironmentID, cfg.SourcePath, cfg.LatestRevisionNo, nullableUUIDPtr(cfg.LatestRevisionID), cfg.CreatedAt, cfg.UpdatedAt, cfg.DeletedAt)
+			id, application_id, name, env, description, format, data, labels, source_path, files, latest_revision_no, latest_revision_id, created_at, updated_at, deleted_at
+		) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,'[]'::jsonb,$10,$11,$12,$13,$14)
+	`, cfg.ID, cfg.ApplicationID, cfg.Name, cfg.EnvironmentID, cfg.Description, cfg.Format, cfg.Data, marshalJSON(cfg.Labels), cfg.SourcePath, cfg.LatestRevisionNo, nullableUUIDPtr(cfg.LatestRevisionID), cfg.CreatedAt, cfg.UpdatedAt, cfg.DeletedAt)
 	if err != nil {
 		return uuid.Nil, err
 	}
@@ -67,7 +67,7 @@ func (s *appConfigService) Create(ctx context.Context, cfg *domain.AppConfig) (u
 
 func (s *appConfigService) Get(ctx context.Context, id uuid.UUID) (*domain.AppConfig, error) {
 	cfg, err := scanAppConfig(store.DB().QueryRowContext(ctx, `
-		select id, application_id, name, env, source_path, latest_revision_no, latest_revision_id, created_at, updated_at, deleted_at
+		select id, application_id, name, env, description, format, data, labels, source_path, latest_revision_no, latest_revision_id, created_at, updated_at, deleted_at
 		from configurations where id=$1 and deleted_at is null
 	`, id))
 	if err != nil {
@@ -103,9 +103,9 @@ func (s *appConfigService) Update(ctx context.Context, cfg *domain.AppConfig) er
 	cfg.WithUpdateDefault()
 	result, err := store.DB().ExecContext(ctx, `
 		update configurations
-		set application_id=$2, name=$3, env=$4, source_path=$5, updated_at=$6
+		set application_id=$2, name=$3, env=$4, description=$5, format=$6, data=$7, labels=$8, source_path=$9, updated_at=$10
 		where id=$1 and deleted_at is null
-	`, cfg.ID, cfg.ApplicationID, cfg.Name, cfg.EnvironmentID, cfg.SourcePath, cfg.UpdatedAt)
+	`, cfg.ID, cfg.ApplicationID, cfg.Name, cfg.EnvironmentID, cfg.Description, cfg.Format, cfg.Data, marshalJSON(cfg.Labels), cfg.SourcePath, cfg.UpdatedAt)
 	if err != nil {
 		return err
 	}
@@ -126,7 +126,7 @@ func (s *appConfigService) Delete(ctx context.Context, id uuid.UUID) error {
 
 func (s *appConfigService) List(ctx context.Context, filter AppConfigListFilter) ([]domain.AppConfig, error) {
 	query := `
-		select id, application_id, name, env, source_path, latest_revision_no, latest_revision_id, created_at, updated_at, deleted_at
+		select id, application_id, name, env, description, format, data, labels, source_path, latest_revision_no, latest_revision_id, created_at, updated_at, deleted_at
 		from configurations
 	`
 	clauses := make([]string, 0, 4)
@@ -305,10 +305,11 @@ func scanAppConfig(scanner interface{ Scan(dest ...any) error }) (*domain.AppCon
 	var (
 		cfg              domain.AppConfig
 		applicationID    sql.NullString
+		labelsJSON       []byte
 		latestRevisionID sql.NullString
 		deletedAt        sql.NullTime
 	)
-	if err := scanner.Scan(&cfg.ID, &applicationID, &cfg.Name, &cfg.EnvironmentID, &cfg.SourcePath, &cfg.LatestRevisionNo, &latestRevisionID, &cfg.CreatedAt, &cfg.UpdatedAt, &deletedAt); err != nil {
+	if err := scanner.Scan(&cfg.ID, &applicationID, &cfg.Name, &cfg.EnvironmentID, &cfg.Description, &cfg.Format, &cfg.Data, &labelsJSON, &cfg.SourcePath, &cfg.LatestRevisionNo, &latestRevisionID, &cfg.CreatedAt, &cfg.UpdatedAt, &deletedAt); err != nil {
 		return nil, err
 	}
 	if applicationID.Valid {
@@ -324,6 +325,9 @@ func scanAppConfig(scanner interface{ Scan(dest ...any) error }) (*domain.AppCon
 			return nil, err
 		}
 		cfg.LatestRevisionID = &parsed
+	}
+	if len(labelsJSON) > 0 {
+		_ = json.Unmarshal(labelsJSON, &cfg.Labels)
 	}
 	if deletedAt.Valid {
 		cfg.DeletedAt = &deletedAt.Time

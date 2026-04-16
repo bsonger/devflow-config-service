@@ -5,7 +5,11 @@ definitions:
         type: string
       created_at:
         type: string
+      data:
+        type: string
       deleted_at:
+        type: string
+      description:
         type: string
       environment_id:
         type: string
@@ -13,8 +17,14 @@ definitions:
         items:
           $ref: '#/definitions/github_com_bsonger_devflow-config-service_pkg_domain.File'
         type: array
+      format:
+        type: string
       id:
         type: string
+      labels:
+        items:
+          $ref: '#/definitions/github_com_bsonger_devflow-config-service_pkg_domain.LabelItem'
+        type: array
       latest_revision_id:
         type: string
       latest_revision_no:
@@ -34,8 +44,18 @@ definitions:
     properties:
       application_id:
         type: string
+      data:
+        type: string
+      description:
+        type: string
       environment_id:
         type: string
+      format:
+        type: string
+      labels:
+        items:
+          $ref: '#/definitions/github_com_bsonger_devflow-config-service_pkg_domain.LabelItem'
+        type: array
       name:
         type: string
     type: object
@@ -76,6 +96,13 @@ definitions:
       name:
         type: string
     type: object
+  github_com_bsonger_devflow-config-service_pkg_domain.LabelItem:
+    properties:
+      key:
+        type: string
+      value:
+        type: string
+    type: object
   github_com_bsonger_devflow-config-service_pkg_domain.RenderedConfigMap:
     properties:
       data:
@@ -91,14 +118,22 @@ definitions:
         type: string
       deleted_at:
         type: string
+      description:
+        type: string
       env:
         items:
           $ref: '#/definitions/github_com_bsonger_devflow-config-service_pkg_domain.EnvVar'
         type: array
       environment_id:
         type: string
+      exposed:
+        type: boolean
       id:
         type: string
+      labels:
+        items:
+          $ref: '#/definitions/github_com_bsonger_devflow-config-service_pkg_domain.LabelItem'
+        type: array
       name:
         type: string
       probes:
@@ -120,12 +155,20 @@ definitions:
     properties:
       application_id:
         type: string
+      description:
+        type: string
       env:
         items:
           $ref: '#/definitions/github_com_bsonger_devflow-config-service_pkg_domain.EnvVar'
         type: array
       environment_id:
         type: string
+      exposed:
+        type: boolean
+      labels:
+        items:
+          $ref: '#/definitions/github_com_bsonger_devflow-config-service_pkg_domain.LabelItem'
+        type: array
       name:
         type: string
       probes:

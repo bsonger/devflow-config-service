@@ -11,7 +11,7 @@
 It provides app-config identity, immutable app-config revisions, and workload template ownership for release flows.
 App config file content is read from the fixed repo `git@github.com:bsonger/devflow-config-repo.git` on branch `main`, using a derived path based on `application_id + environment_id`.
 
-## Architecture Style
+## Architecture style
 
 This repo uses a **layered metadata-service backend**:
 
@@ -21,7 +21,7 @@ router -> api -> app -> infra/store
                 \-> domain
 ```
 
-## Request Flow
+## Request flow
 
 ```text
 Client
@@ -39,7 +39,7 @@ The target relational model is:
 - `AppConfigRevision` = immutable repo-derived file snapshot
 - `WorkloadConfig` = runtime template plus strategy type
 
-## Internal Package Layout
+## Internal package layout
 
 - `cmd/main.go`
   - process entrypoint only
@@ -62,7 +62,7 @@ The target relational model is:
 - `pkg/domain`
   - `AppConfig`, `AppConfigRevision`, `WorkloadConfig`
 
-## External Dependencies
+## External dependencies
 
 - `Gin`
 - PostgreSQL persistence
@@ -73,9 +73,10 @@ The target relational model is:
 
 - `scripts/regen-swagger.sh` reruns `swag init -g cmd/main.go --parseDependency -o docs/generated/swagger`.
 - `scripts/build.sh` calls regen then builds the binary to `bin/`.
-- Export scripts rely on `docs/generated/swagger` being populated at build time.
+- `Dockerfile` executes `swag init -g cmd/main.go --parseDependency -o docs/generated/swagger` during the build stage.
+- Export scripts rely on `docs/generated/swagger` being populated at build time and `scripts/export_service_repo.sh` copies that folder into split repos.
 
-## Non-Goals
+## Non-goals
 
 - `Project`
 - `Application`
@@ -84,7 +85,3 @@ The target relational model is:
 - `Intent`
 - verify ingress / writeback
 - service / route ownership
-
-- The `Dockerfile` executes `swag init -g cmd/main.go --parseDependency -o docs/generated/swagger` during the build stage.
-- Keep the generated files under `docs/generated/swagger`; rerun `swag init` whenever handlers or routes change.
-- `scripts/export_service_repo.sh` copies `docs/generated/swagger` so split repos inherit the same Swagger bundle.

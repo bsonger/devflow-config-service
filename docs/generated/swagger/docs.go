@@ -378,7 +378,13 @@ const docTemplate = `{
                 "created_at": {
                     "type": "string"
                 },
+                "data": {
+                    "type": "string"
+                },
                 "deleted_at": {
+                    "type": "string"
+                },
+                "description": {
                     "type": "string"
                 },
                 "environment_id": {
@@ -390,8 +396,17 @@ const docTemplate = `{
                         "$ref": "#/definitions/github_com_bsonger_devflow-config-service_pkg_domain.File"
                     }
                 },
+                "format": {
+                    "type": "string"
+                },
                 "id": {
                     "type": "string"
+                },
+                "labels": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_bsonger_devflow-config-service_pkg_domain.LabelItem"
+                    }
                 },
                 "latest_revision_id": {
                     "type": "string"
@@ -422,8 +437,23 @@ const docTemplate = `{
                 "application_id": {
                     "type": "string"
                 },
+                "data": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
                 "environment_id": {
                     "type": "string"
+                },
+                "format": {
+                    "type": "string"
+                },
+                "labels": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_bsonger_devflow-config-service_pkg_domain.LabelItem"
+                    }
                 },
                 "name": {
                     "type": "string"
@@ -487,6 +517,17 @@ const docTemplate = `{
                 }
             }
         },
+        "github_com_bsonger_devflow-config-service_pkg_domain.LabelItem": {
+            "type": "object",
+            "properties": {
+                "key": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "string"
+                }
+            }
+        },
         "github_com_bsonger_devflow-config-service_pkg_domain.RenderedConfigMap": {
             "type": "object",
             "properties": {
@@ -510,6 +551,9 @@ const docTemplate = `{
                 "deleted_at": {
                     "type": "string"
                 },
+                "description": {
+                    "type": "string"
+                },
                 "env": {
                     "type": "array",
                     "items": {
@@ -519,8 +563,17 @@ const docTemplate = `{
                 "environment_id": {
                     "type": "string"
                 },
+                "exposed": {
+                    "type": "boolean"
+                },
                 "id": {
                     "type": "string"
+                },
+                "labels": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_bsonger_devflow-config-service_pkg_domain.LabelItem"
+                    }
                 },
                 "name": {
                     "type": "string"
@@ -553,6 +606,9 @@ const docTemplate = `{
                 "application_id": {
                     "type": "string"
                 },
+                "description": {
+                    "type": "string"
+                },
                 "env": {
                     "type": "array",
                     "items": {
@@ -561,6 +617,15 @@ const docTemplate = `{
                 },
                 "environment_id": {
                     "type": "string"
+                },
+                "exposed": {
+                    "type": "boolean"
+                },
+                "labels": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_bsonger_devflow-config-service_pkg_domain.LabelItem"
+                    }
                 },
                 "name": {
                     "type": "string"

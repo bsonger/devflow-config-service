@@ -32,9 +32,9 @@ func (s *workloadConfigService) Create(ctx context.Context, item *domain.Workloa
 	}
 	_, err := store.DB().ExecContext(ctx, `
 		insert into workload_configs (
-			id, application_id, environment_id, name, replicas, resources, probes, env, workload_type, strategy, created_at, updated_at, deleted_at
-		) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
-	`, item.ID, item.ApplicationID, emptyToNull(item.EnvironmentID), item.Name, item.Replicas, marshalJSON(item.Resources), marshalJSON(item.Probes), marshalJSON(item.Env), item.WorkloadType, item.Strategy, item.CreatedAt, item.UpdatedAt, item.DeletedAt)
+			id, application_id, environment_id, name, description, replicas, exposed, resources, probes, env, labels, workload_type, strategy, created_at, updated_at, deleted_at
+		) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
+	`, item.ID, item.ApplicationID, emptyToNull(item.EnvironmentID), item.Name, item.Description, item.Replicas, item.Exposed, marshalJSON(item.Resources), marshalJSON(item.Probes), marshalJSON(item.Env), marshalJSON(item.Labels), item.WorkloadType, item.Strategy, item.CreatedAt, item.UpdatedAt, item.DeletedAt)
 	if err != nil {
 		return uuid.Nil, err
 	}
@@ -43,7 +43,7 @@ func (s *workloadConfigService) Create(ctx context.Context, item *domain.Workloa
 
 func (s *workloadConfigService) Get(ctx context.Context, id uuid.UUID) (*domain.WorkloadConfig, error) {
 	return scanWorkloadConfig(store.DB().QueryRowContext(ctx, `
-		select id, application_id, environment_id, name, replicas, resources, probes, env, workload_type, strategy, created_at, updated_at, deleted_at
+		select id, application_id, environment_id, name, description, replicas, exposed, resources, probes, env, labels, workload_type, strategy, created_at, updated_at, deleted_at
 		from workload_configs where id=$1 and deleted_at is null
 	`, id))
 }
@@ -61,9 +61,9 @@ func (s *workloadConfigService) Update(ctx context.Context, item *domain.Workloa
 	item.WithUpdateDefault()
 	result, err := store.DB().ExecContext(ctx, `
 		update workload_configs
-		set application_id=$2, environment_id=$3, name=$4, replicas=$5, resources=$6, probes=$7, env=$8, workload_type=$9, strategy=$10, updated_at=$11
+		set application_id=$2, environment_id=$3, name=$4, description=$5, replicas=$6, exposed=$7, resources=$8, probes=$9, env=$10, labels=$11, workload_type=$12, strategy=$13, updated_at=$14
 		where id=$1 and deleted_at is null
-	`, item.ID, item.ApplicationID, emptyToNull(item.EnvironmentID), item.Name, item.Replicas, marshalJSON(item.Resources), marshalJSON(item.Probes), marshalJSON(item.Env), item.WorkloadType, item.Strategy, item.UpdatedAt)
+	`, item.ID, item.ApplicationID, emptyToNull(item.EnvironmentID), item.Name, item.Description, item.Replicas, item.Exposed, marshalJSON(item.Resources), marshalJSON(item.Probes), marshalJSON(item.Env), marshalJSON(item.Labels), item.WorkloadType, item.Strategy, item.UpdatedAt)
 	if err != nil {
 		return err
 	}
@@ -84,7 +84,7 @@ func (s *workloadConfigService) Delete(ctx context.Context, id uuid.UUID) error 
 
 func (s *workloadConfigService) List(ctx context.Context, filter WorkloadConfigListFilter) ([]domain.WorkloadConfig, error) {
 	query := `
-		select id, application_id, environment_id, name, replicas, resources, probes, env, workload_type, strategy, created_at, updated_at, deleted_at
+		select id, application_id, environment_id, name, description, replicas, exposed, resources, probes, env, labels, workload_type, strategy, created_at, updated_at, deleted_at
 		from workload_configs
 	`
 	clauses := make([]string, 0, 4)
@@ -159,9 +159,10 @@ func scanWorkloadConfig(scanner interface{ Scan(dest ...any) error }) (*domain.W
 		resourcesJSON []byte
 		probesJSON    []byte
 		envJSON       []byte
+		labelsJSON    []byte
 		deletedAt     sql.NullTime
 	)
-	if err := scanner.Scan(&item.ID, &item.ApplicationID, &environmentID, &item.Name, &item.Replicas, &resourcesJSON, &probesJSON, &envJSON, &item.WorkloadType, &item.Strategy, &item.CreatedAt, &item.UpdatedAt, &deletedAt); err != nil {
+	if err := scanner.Scan(&item.ID, &item.ApplicationID, &environmentID, &item.Name, &item.Description, &item.Replicas, &item.Exposed, &resourcesJSON, &probesJSON, &envJSON, &labelsJSON, &item.WorkloadType, &item.Strategy, &item.CreatedAt, &item.UpdatedAt, &deletedAt); err != nil {
 		return nil, err
 	}
 	if environmentID.Valid {
@@ -175,6 +176,9 @@ func scanWorkloadConfig(scanner interface{ Scan(dest ...any) error }) (*domain.W
 	}
 	if len(envJSON) > 0 {
 		_ = json.Unmarshal(envJSON, &item.Env)
+	}
+	if len(labelsJSON) > 0 {
+		_ = json.Unmarshal(labelsJSON, &item.Labels)
 	}
 	if deletedAt.Valid {
 		item.DeletedAt = &deletedAt.Time

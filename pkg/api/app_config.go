@@ -41,7 +41,15 @@ func (h *AppConfigHandler) Create(c *gin.Context) {
 		httpx.WriteError(c, http.StatusBadRequest, "invalid_argument", err.Error(), nil)
 		return
 	}
-	item := &domain.AppConfig{ApplicationID: req.ApplicationID, EnvironmentID: req.EnvironmentID, Name: req.Name}
+	item := &domain.AppConfig{
+		ApplicationID: req.ApplicationID,
+		EnvironmentID: req.EnvironmentID,
+		Name:          req.Name,
+		Description:   req.Description,
+		Format:        req.Format,
+		Data:          req.Data,
+		Labels:        req.Labels,
+	}
 	item.WithCreateDefault()
 	if _, err := h.svc.Create(c.Request.Context(), item); err != nil {
 		httpx.WriteError(c, http.StatusBadRequest, "invalid_argument", err.Error(), nil)
@@ -92,7 +100,15 @@ func (h *AppConfigHandler) Update(c *gin.Context) {
 		httpx.WriteError(c, http.StatusBadRequest, "invalid_argument", err.Error(), nil)
 		return
 	}
-	item := &domain.AppConfig{ApplicationID: req.ApplicationID, EnvironmentID: req.EnvironmentID, Name: req.Name}
+	item := &domain.AppConfig{
+		ApplicationID: req.ApplicationID,
+		EnvironmentID: req.EnvironmentID,
+		Name:          req.Name,
+		Description:   req.Description,
+		Format:        req.Format,
+		Data:          req.Data,
+		Labels:        req.Labels,
+	}
 	item.SetID(id)
 	if err := h.svc.Update(c.Request.Context(), item); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {

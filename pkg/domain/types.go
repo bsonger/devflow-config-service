@@ -5,6 +5,11 @@ type EnvVar struct {
 	Value string `json:"value"`
 }
 
+type LabelItem struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
+
 type File struct {
 	Name    string `json:"name"`
 	Content string `json:"content"`

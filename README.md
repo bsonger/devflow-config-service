@@ -2,7 +2,7 @@
 
 `devflow-config-service` is the backend owner for `AppConfig` and `WorkloadConfig`.
 
-## Backend Role
+## Role
 
 - own `AppConfig` and `WorkloadConfig`
 - provide app-level config identity plus explicit `sync-from-repo`
@@ -10,7 +10,7 @@
 - read config files from the fixed repo `git@github.com:bsonger/devflow-config-repo.git` on branch `main`
 - `sync-from-repo` pulls the latest `main` before freezing a revision
 
-## Local Run
+## Key Commands
 
 - `go run ./cmd`
 - `go build ./cmd/main.go`
@@ -20,8 +20,11 @@
 
 ## Key Docs
 
+- `docs/README.md`
+- `scripts/README.md`
 - `docs/architecture.md`
-- `docs/api-spec.md`
 - `docs/constraints.md`
+- `docs/observability.md`
+- `docs/api-spec.md`
 - `docs/resources/README.md`
 - `docs/generated/swagger/swagger.yaml`
