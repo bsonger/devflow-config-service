@@ -115,3 +115,42 @@ func TestRepositoryReadSnapshotReturnsSyncError(t *testing.T) {
 		t.Fatalf("err = %v, want ErrRepositorySyncFailed", err)
 	}
 }
+
+func TestRepositoryReadSnapshotFallsBackWhenGitSyncBinaryIsUnavailable(t *testing.T) {
+	rootDir := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(rootDir, ".git"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	sourceDir := filepath.Join(rootDir, "applications/devflow-platform/services/devflow-app-service")
+	if err := os.MkdirAll(filepath.Join(sourceDir, "environments"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(sourceDir, "configuration.yaml"), []byte("foo: bar\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(sourceDir, "deployment.yaml"), []byte("replicas: 1\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(sourceDir, "service.yaml"), []byte("port: 80\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	repo := NewRepository(Options{
+		RootDir:    rootDir,
+		DefaultRef: "main",
+	})
+	repo.syncer = &stubGitSyncer{err: errors.New("fork/exec /usr/bin/git: exec format error")}
+
+	snapshot, err := repo.ReadSnapshot(context.Background(), "applications/devflow-platform/services/devflow-app-service", "base")
+	if err != nil {
+		t.Fatalf("ReadSnapshot returned error: %v", err)
+	}
+	if snapshot == nil {
+		t.Fatal("expected snapshot")
+	}
+	if snapshot.SourceCommit != "main" {
+		t.Fatalf("SourceCommit = %q, want %q", snapshot.SourceCommit, "main")
+	}
+	if len(snapshot.Files) != 3 {
+		t.Fatalf("len(Files) = %d, want 3", len(snapshot.Files))
+	}
+}

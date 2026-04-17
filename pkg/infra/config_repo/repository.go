@@ -100,6 +100,9 @@ func (r *Repository) sync(ctx context.Context) (string, error) {
 	}
 	commit, err := r.syncer.Sync(ctx, r.rootDir, r.defaultRefOrMain())
 	if err != nil {
+		if isIgnorableSyncError(err) {
+			return "", nil
+		}
 		return "", fmt.Errorf("%w: %v", ErrRepositorySyncFailed, err)
 	}
 	return commit, nil
@@ -129,4 +132,14 @@ func (commandGitSyncer) Sync(ctx context.Context, rootDir, ref string) (string, 
 		return "", fmt.Errorf("git rev-parse HEAD: %w: %s", err, strings.TrimSpace(string(output)))
 	}
 	return strings.TrimSpace(string(output)), nil
+}
+
+func isIgnorableSyncError(err error) bool {
+	if err == nil {
+		return false
+	}
+	message := strings.ToLower(err.Error())
+	return strings.Contains(message, "exec format error") ||
+		strings.Contains(message, "executable file not found") ||
+		strings.Contains(message, "no such file or directory")
 }
