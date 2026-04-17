@@ -28,21 +28,21 @@ func TestRepositoryReadSnapshot(t *testing.T) {
 		DefaultRef: "main",
 	})
 
-	snapshot, err := repo.ReadSnapshot(context.Background(), "apps/11111111-1111-1111-1111-111111111111/staging/configmap", "staging")
+	snapshot, err := repo.ReadSnapshot(context.Background(), "applications/devflow-platform/services/devflow-app-service", "staging")
 	if err != nil {
 		t.Fatalf("ReadSnapshot returned error: %v", err)
 	}
 	if snapshot.SourceCommit != "main" {
 		t.Fatalf("SourceCommit = %q, want %q", snapshot.SourceCommit, "main")
 	}
-	if len(snapshot.Files) != 2 {
-		t.Fatalf("len(Files) = %d, want 2", len(snapshot.Files))
+	if len(snapshot.Files) != 4 {
+		t.Fatalf("len(Files) = %d, want 4", len(snapshot.Files))
 	}
-	if snapshot.Files[0].Name != "app.yaml" {
-		t.Fatalf("first file = %q, want %q", snapshot.Files[0].Name, "app.yaml")
+	if snapshot.Files[0].Name != "configuration.yaml" {
+		t.Fatalf("first file = %q, want %q", snapshot.Files[0].Name, "configuration.yaml")
 	}
-	if snapshot.Files[1].Name != "logging.yaml" {
-		t.Fatalf("last file = %q, want %q", snapshot.Files[1].Name, "logging.yaml")
+	if snapshot.Files[3].Name != "environments/staging.yaml" {
+		t.Fatalf("last file = %q, want %q", snapshot.Files[3].Name, "environments/staging.yaml")
 	}
 	if snapshot.SourceDigest == "" {
 		t.Fatal("SourceDigest should not be empty")
@@ -54,11 +54,20 @@ func TestRepositoryReadSnapshotPullsGitRepoBeforeReading(t *testing.T) {
 	if err := os.MkdirAll(filepath.Join(rootDir, ".git"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	sourceDir := filepath.Join(rootDir, "apps/11111111-1111-1111-1111-111111111111/staging/configmap")
-	if err := os.MkdirAll(sourceDir, 0o755); err != nil {
+	sourceDir := filepath.Join(rootDir, "applications/devflow-platform/services/devflow-app-service")
+	if err := os.MkdirAll(filepath.Join(sourceDir, "environments"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(sourceDir, "app.yaml"), []byte("foo: bar\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(sourceDir, "configuration.yaml"), []byte("foo: bar\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(sourceDir, "deployment.yaml"), []byte("replicas: 1\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(sourceDir, "service.yaml"), []byte("port: 80\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(sourceDir, "environments", "staging.yaml"), []byte("replicas: 2\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	syncer := &stubGitSyncer{commit: "abc123def456"}
@@ -68,7 +77,7 @@ func TestRepositoryReadSnapshotPullsGitRepoBeforeReading(t *testing.T) {
 	})
 	repo.syncer = syncer
 
-	snapshot, err := repo.ReadSnapshot(context.Background(), "apps/11111111-1111-1111-1111-111111111111/staging/configmap", "staging")
+	snapshot, err := repo.ReadSnapshot(context.Background(), "applications/devflow-platform/services/devflow-app-service", "staging")
 	if err != nil {
 		t.Fatalf("ReadSnapshot returned error: %v", err)
 	}
@@ -88,11 +97,11 @@ func TestRepositoryReadSnapshotReturnsSyncError(t *testing.T) {
 	if err := os.MkdirAll(filepath.Join(rootDir, ".git"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	sourceDir := filepath.Join(rootDir, "apps/11111111-1111-1111-1111-111111111111/staging/configmap")
+	sourceDir := filepath.Join(rootDir, "applications/devflow-platform/services/devflow-app-service")
 	if err := os.MkdirAll(sourceDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(sourceDir, "app.yaml"), []byte("foo: bar\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(sourceDir, "configuration.yaml"), []byte("foo: bar\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	repo := NewRepository(Options{
@@ -101,7 +110,7 @@ func TestRepositoryReadSnapshotReturnsSyncError(t *testing.T) {
 	})
 	repo.syncer = &stubGitSyncer{err: errors.New("pull failed")}
 
-	_, err := repo.ReadSnapshot(context.Background(), "apps/11111111-1111-1111-1111-111111111111/staging/configmap", "staging")
+	_, err := repo.ReadSnapshot(context.Background(), "applications/devflow-platform/services/devflow-app-service", "staging")
 	if !errors.Is(err, ErrRepositorySyncFailed) {
 		t.Fatalf("err = %v, want ErrRepositorySyncFailed", err)
 	}

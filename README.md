@@ -8,6 +8,8 @@
 - provide app-level config identity plus explicit `sync-from-repo`
 - act as a release-input source for other services and the platform
 - read config files from the fixed repo `git@github.com:bsonger/devflow-config-repo.git` on branch `main`
+- derive `AppConfig.source_path` as `applications/devflow-platform/services/<name>`
+- read service-level base files plus optional `environments/<env>.yaml` overlay from the config repo
 - `sync-from-repo` pulls the latest `main` before freezing a revision
 
 ## Key Commands

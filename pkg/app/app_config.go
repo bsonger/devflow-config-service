@@ -53,7 +53,7 @@ func (s *appConfigService) Create(ctx context.Context, cfg *domain.AppConfig) (u
 	if err := validateAppConfig(cfg); err != nil {
 		return uuid.Nil, err
 	}
-	cfg.SourcePath = deriveAppConfigSourcePath(cfg.ApplicationID, cfg.EnvironmentID)
+	cfg.SourcePath = deriveAppConfigSourcePath(cfg.Name)
 	_, err := store.DB().ExecContext(ctx, `
 		insert into configurations (
 			id, application_id, name, env, description, format, data, labels, source_path, files, latest_revision_no, latest_revision_id, created_at, updated_at, deleted_at
@@ -99,7 +99,7 @@ func (s *appConfigService) Update(ctx context.Context, cfg *domain.AppConfig) er
 	}
 	cfg.CreatedAt = current.CreatedAt
 	cfg.DeletedAt = current.DeletedAt
-	cfg.SourcePath = deriveAppConfigSourcePath(cfg.ApplicationID, cfg.EnvironmentID)
+	cfg.SourcePath = deriveAppConfigSourcePath(cfg.Name)
 	cfg.WithUpdateDefault()
 	result, err := store.DB().ExecContext(ctx, `
 		update configurations
@@ -177,12 +177,26 @@ func (s *appConfigService) Sync(ctx context.Context, id uuid.UUID) (*AppConfigSy
 	snapshot, err := s.repo.ReadSnapshot(ctx, cfg.SourcePath, cfg.EnvironmentID)
 	if err != nil {
 		if errors.Is(err, configrepo.ErrSourcePathNotFound) {
-			return nil, ErrConfigSourceNotFound
+			fallbackPath := deriveAppConfigSourcePath(cfg.Name)
+			if fallbackPath != "" && fallbackPath != cfg.SourcePath {
+				snapshot, err = s.repo.ReadSnapshot(ctx, fallbackPath, cfg.EnvironmentID)
+				if err == nil {
+					cfg.SourcePath = fallbackPath
+					if updateErr := s.updateSourcePath(ctx, cfg.ID, fallbackPath); updateErr != nil {
+						return nil, updateErr
+					}
+				}
+			}
 		}
-		if errors.Is(err, configrepo.ErrRepositorySyncFailed) {
-			return nil, fmt.Errorf("%w: %v", ErrConfigRepositorySyncFailed, err)
+		if err != nil {
+			if errors.Is(err, configrepo.ErrSourcePathNotFound) {
+				return nil, ErrConfigSourceNotFound
+			}
+			if errors.Is(err, configrepo.ErrRepositorySyncFailed) {
+				return nil, fmt.Errorf("%w: %v", ErrConfigRepositorySyncFailed, err)
+			}
+			return nil, err
 		}
-		return nil, err
 	}
 	latest, err := s.getLatestRevision(ctx, id)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
@@ -265,6 +279,15 @@ func (s *appConfigService) updateLatestRevision(ctx context.Context, cfg *domain
 	return err
 }
 
+func (s *appConfigService) updateSourcePath(ctx context.Context, id uuid.UUID, sourcePath string) error {
+	_, err := store.DB().ExecContext(ctx, `
+		update configurations
+		set source_path=$2, updated_at=$3
+		where id=$1 and deleted_at is null
+	`, id, sourcePath, time.Now())
+	return err
+}
+
 func validateAppConfig(cfg *domain.AppConfig) error {
 	if cfg == nil {
 		return errors.New("app_config is required")
@@ -289,8 +312,12 @@ func validateAppConfigInput(applicationID uuid.UUID, environmentID string) []str
 	return errs
 }
 
-func deriveAppConfigSourcePath(applicationID uuid.UUID, environmentID string) string {
-	return fmt.Sprintf("apps/%s/%s/configmap", applicationID.String(), strings.TrimSpace(environmentID))
+func deriveAppConfigSourcePath(name string) string {
+	trimmed := strings.TrimSpace(name)
+	if trimmed == "" {
+		return ""
+	}
+	return fmt.Sprintf("applications/devflow-platform/services/%s", trimmed)
 }
 
 func renderConfigMap(files []domain.File) domain.RenderedConfigMap {

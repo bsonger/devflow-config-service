@@ -14,3 +14,5 @@
 
 - deletion semantics follow the existing model definitions
 - every write operation must update `updated_at`
+- `AppConfig.source_path` is system-derived from `name`; clients must not treat it as user-editable data
+- `sync-from-repo` must stay aligned with `devflow-config-repo` service layout under `applications/devflow-platform/services/<service>`

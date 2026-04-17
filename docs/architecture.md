@@ -9,7 +9,7 @@
 - `WorkloadConfig`
 
 It provides app-config identity, immutable app-config revisions, and workload template ownership for release flows.
-App config file content is read from the fixed repo `git@github.com:bsonger/devflow-config-repo.git` on branch `main`, using a derived path based on `application_id + environment_id`.
+App config file content is read from the fixed repo `git@github.com:bsonger/devflow-config-repo.git` on branch `main`, using a derived service path `applications/devflow-platform/services/<app_config.name>`.
 
 ## Architecture style
 
@@ -38,6 +38,15 @@ The target relational model is:
 - `AppConfig` = mutable identity + derived source path + latest revision pointer
 - `AppConfigRevision` = immutable repo-derived file snapshot
 - `WorkloadConfig` = runtime template plus strategy type
+
+For `AppConfig` repo reads, the repo-layout contract is:
+
+- `applications/devflow-platform/services/<service>/configuration.yaml`
+- `applications/devflow-platform/services/<service>/deployment.yaml`
+- `applications/devflow-platform/services/<service>/service.yaml`
+- optional `applications/devflow-platform/services/<service>/environments/<env>.yaml`
+
+`sync-from-repo` freezes the base files first, then appends the environment overlay when `env` is not empty / `base` and the overlay file exists.
 
 ## Internal package layout
 
