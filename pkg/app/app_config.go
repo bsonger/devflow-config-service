@@ -54,11 +54,12 @@ func (s *appConfigService) Create(ctx context.Context, cfg *domain.AppConfig) (u
 		return uuid.Nil, err
 	}
 	cfg.SourcePath = deriveAppConfigSourcePath(cfg.Name)
+	cfg.MountPath = normalizeAppConfigMountPath(cfg.MountPath)
 	_, err := store.DB().ExecContext(ctx, `
 		insert into configurations (
-			id, application_id, name, env, description, format, data, labels, source_path, files, latest_revision_no, latest_revision_id, created_at, updated_at, deleted_at
-		) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,'[]'::jsonb,$10,$11,$12,$13,$14)
-	`, cfg.ID, cfg.ApplicationID, cfg.Name, cfg.EnvironmentID, cfg.Description, cfg.Format, cfg.Data, marshalJSON(cfg.Labels), cfg.SourcePath, cfg.LatestRevisionNo, nullableUUIDPtr(cfg.LatestRevisionID), cfg.CreatedAt, cfg.UpdatedAt, cfg.DeletedAt)
+			id, application_id, name, env, description, format, data, mount_path, labels, source_path, files, latest_revision_no, latest_revision_id, created_at, updated_at, deleted_at
+		) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'[]'::jsonb,$11,$12,$13,$14,$15)
+	`, cfg.ID, cfg.ApplicationID, cfg.Name, cfg.EnvironmentID, cfg.Description, cfg.Format, cfg.Data, cfg.MountPath, marshalJSON(cfg.Labels), cfg.SourcePath, cfg.LatestRevisionNo, nullableUUIDPtr(cfg.LatestRevisionID), cfg.CreatedAt, cfg.UpdatedAt, cfg.DeletedAt)
 	if err != nil {
 		return uuid.Nil, err
 	}
@@ -67,7 +68,7 @@ func (s *appConfigService) Create(ctx context.Context, cfg *domain.AppConfig) (u
 
 func (s *appConfigService) Get(ctx context.Context, id uuid.UUID) (*domain.AppConfig, error) {
 	cfg, err := scanAppConfig(store.DB().QueryRowContext(ctx, `
-		select id, application_id, name, env, description, format, data, labels, source_path, latest_revision_no, latest_revision_id, created_at, updated_at, deleted_at
+		select id, application_id, name, env, description, format, data, mount_path, labels, source_path, latest_revision_no, latest_revision_id, created_at, updated_at, deleted_at
 		from configurations where id=$1 and deleted_at is null
 	`, id))
 	if err != nil {
@@ -100,12 +101,13 @@ func (s *appConfigService) Update(ctx context.Context, cfg *domain.AppConfig) er
 	cfg.CreatedAt = current.CreatedAt
 	cfg.DeletedAt = current.DeletedAt
 	cfg.SourcePath = deriveAppConfigSourcePath(cfg.Name)
+	cfg.MountPath = normalizeAppConfigMountPath(cfg.MountPath)
 	cfg.WithUpdateDefault()
 	result, err := store.DB().ExecContext(ctx, `
 		update configurations
-		set application_id=$2, name=$3, env=$4, description=$5, format=$6, data=$7, labels=$8, source_path=$9, updated_at=$10
+		set application_id=$2, name=$3, env=$4, description=$5, format=$6, data=$7, mount_path=$8, labels=$9, source_path=$10, updated_at=$11
 		where id=$1 and deleted_at is null
-	`, cfg.ID, cfg.ApplicationID, cfg.Name, cfg.EnvironmentID, cfg.Description, cfg.Format, cfg.Data, marshalJSON(cfg.Labels), cfg.SourcePath, cfg.UpdatedAt)
+	`, cfg.ID, cfg.ApplicationID, cfg.Name, cfg.EnvironmentID, cfg.Description, cfg.Format, cfg.Data, cfg.MountPath, marshalJSON(cfg.Labels), cfg.SourcePath, cfg.UpdatedAt)
 	if err != nil {
 		return err
 	}
@@ -126,7 +128,7 @@ func (s *appConfigService) Delete(ctx context.Context, id uuid.UUID) error {
 
 func (s *appConfigService) List(ctx context.Context, filter AppConfigListFilter) ([]domain.AppConfig, error) {
 	query := `
-		select id, application_id, name, env, description, format, data, labels, source_path, latest_revision_no, latest_revision_id, created_at, updated_at, deleted_at
+		select id, application_id, name, env, description, format, data, mount_path, labels, source_path, latest_revision_no, latest_revision_id, created_at, updated_at, deleted_at
 		from configurations
 	`
 	clauses := make([]string, 0, 4)
@@ -298,6 +300,7 @@ func validateAppConfig(cfg *domain.AppConfig) error {
 	if strings.TrimSpace(cfg.Name) == "" {
 		return errors.New("name is required")
 	}
+	cfg.MountPath = normalizeAppConfigMountPath(cfg.MountPath)
 	return nil
 }
 
@@ -320,6 +323,14 @@ func deriveAppConfigSourcePath(name string) string {
 	return fmt.Sprintf("applications/devflow-platform/services/%s", trimmed)
 }
 
+func normalizeAppConfigMountPath(value string) string {
+	trimmed := strings.TrimSpace(value)
+	if trimmed == "" {
+		return "/etc/devflow/config"
+	}
+	return trimmed
+}
+
 func renderConfigMap(files []domain.File) domain.RenderedConfigMap {
 	data := make(map[string]string, len(files))
 	for _, file := range files {
@@ -336,7 +347,7 @@ func scanAppConfig(scanner interface{ Scan(dest ...any) error }) (*domain.AppCon
 		latestRevisionID sql.NullString
 		deletedAt        sql.NullTime
 	)
-	if err := scanner.Scan(&cfg.ID, &applicationID, &cfg.Name, &cfg.EnvironmentID, &cfg.Description, &cfg.Format, &cfg.Data, &labelsJSON, &cfg.SourcePath, &cfg.LatestRevisionNo, &latestRevisionID, &cfg.CreatedAt, &cfg.UpdatedAt, &deletedAt); err != nil {
+	if err := scanner.Scan(&cfg.ID, &applicationID, &cfg.Name, &cfg.EnvironmentID, &cfg.Description, &cfg.Format, &cfg.Data, &cfg.MountPath, &labelsJSON, &cfg.SourcePath, &cfg.LatestRevisionNo, &latestRevisionID, &cfg.CreatedAt, &cfg.UpdatedAt, &deletedAt); err != nil {
 		return nil, err
 	}
 	if applicationID.Valid {
@@ -356,6 +367,7 @@ func scanAppConfig(scanner interface{ Scan(dest ...any) error }) (*domain.AppCon
 	if len(labelsJSON) > 0 {
 		_ = json.Unmarshal(labelsJSON, &cfg.Labels)
 	}
+	cfg.MountPath = normalizeAppConfigMountPath(cfg.MountPath)
 	if deletedAt.Valid {
 		cfg.DeletedAt = &deletedAt.Time
 	}

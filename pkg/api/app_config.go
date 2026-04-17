@@ -48,6 +48,7 @@ func (h *AppConfigHandler) Create(c *gin.Context) {
 		Description:   req.Description,
 		Format:        req.Format,
 		Data:          req.Data,
+		MountPath:     req.MountPath,
 		Labels:        req.Labels,
 	}
 	item.WithCreateDefault()
@@ -107,6 +108,7 @@ func (h *AppConfigHandler) Update(c *gin.Context) {
 		Description:   req.Description,
 		Format:        req.Format,
 		Data:          req.Data,
+		MountPath:     req.MountPath,
 		Labels:        req.Labels,
 	}
 	item.SetID(id)

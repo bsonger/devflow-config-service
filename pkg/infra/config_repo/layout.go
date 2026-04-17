@@ -27,8 +27,12 @@ func resolveLayout(rootDir, sourcePath, env string) (*layoutResolution, error) {
 		return nil, err
 	}
 	files := make([]string, 0, len(entries)+1)
+	configOnlyLayout := strings.HasPrefix(normalizedSource, "applications/devflow-platform/services/")
 	for _, entry := range entries {
 		if entry.IsDir() {
+			continue
+		}
+		if configOnlyLayout && entry.Name() != "configuration.yaml" {
 			continue
 		}
 		files = append(files, entry.Name())
@@ -70,13 +74,9 @@ func layoutFileOrder(name string) int {
 	switch filepath.ToSlash(name) {
 	case "configuration.yaml":
 		return 0
-	case "deployment.yaml":
-		return 1
-	case "service.yaml":
-		return 2
 	default:
 		if strings.HasPrefix(filepath.ToSlash(name), "environments/") {
-			return 3
+			return 1
 		}
 		return 10
 	}

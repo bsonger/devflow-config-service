@@ -37,7 +37,7 @@
 - `AppConfig` source repo is fixed to `git@github.com:bsonger/devflow-config-repo.git`
 - `AppConfig` source branch is fixed to `main`
 - `AppConfig` source path is derived from `name` as `applications/devflow-platform/services/<name>`
-- `POST /api/v1/app-configs/{id}/sync-from-repo` reads `configuration.yaml`, `deployment.yaml`, `service.yaml`, plus optional `environments/{env}.yaml`
+- `POST /api/v1/app-configs/{id}/sync-from-repo` reads `configuration.yaml`, plus optional `environments/{env}.yaml`
 - `POST /api/v1/app-configs/{id}/sync-from-repo` pulls the latest `origin/main`, then freezes the current repo snapshot into an immutable revision
 - `WorkloadConfig` writable fields are `application_id`, optional `environment_id`, `name`, `replicas`, `resources`, `probes`, `env`, `workload_type`, and `strategy`
 
@@ -49,6 +49,7 @@
   - `files`
   - `rendered_configmap`
   - `source_commit`
+- `AppConfig` responses include `mount_path`, which is the target in-container mount directory/file path used later by manifest rendering
 - list returns `200` with `{ "data": [...], "pagination": { ... } }`
 - update and delete return `204`
 

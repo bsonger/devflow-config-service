@@ -42,11 +42,9 @@ The target relational model is:
 For `AppConfig` repo reads, the repo-layout contract is:
 
 - `applications/devflow-platform/services/<service>/configuration.yaml`
-- `applications/devflow-platform/services/<service>/deployment.yaml`
-- `applications/devflow-platform/services/<service>/service.yaml`
 - optional `applications/devflow-platform/services/<service>/environments/<env>.yaml`
 
-`sync-from-repo` freezes the base files first, then appends the environment overlay when `env` is not empty / `base` and the overlay file exists.
+`sync-from-repo` freezes `configuration.yaml` first, then appends the environment overlay when `env` is not empty / `base` and the overlay file exists. `deployment.yaml` and `service.yaml` stay outside the `AppConfig` boundary because they belong to workload/network input, not runtime config payload.
 
 ## Internal package layout
 

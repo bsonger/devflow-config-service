@@ -35,14 +35,14 @@ func TestRepositoryReadSnapshot(t *testing.T) {
 	if snapshot.SourceCommit != "main" {
 		t.Fatalf("SourceCommit = %q, want %q", snapshot.SourceCommit, "main")
 	}
-	if len(snapshot.Files) != 4 {
-		t.Fatalf("len(Files) = %d, want 4", len(snapshot.Files))
+	if len(snapshot.Files) != 2 {
+		t.Fatalf("len(Files) = %d, want 2", len(snapshot.Files))
 	}
 	if snapshot.Files[0].Name != "configuration.yaml" {
 		t.Fatalf("first file = %q, want %q", snapshot.Files[0].Name, "configuration.yaml")
 	}
-	if snapshot.Files[3].Name != "environments/staging.yaml" {
-		t.Fatalf("last file = %q, want %q", snapshot.Files[3].Name, "environments/staging.yaml")
+	if snapshot.Files[1].Name != "environments/staging.yaml" {
+		t.Fatalf("last file = %q, want %q", snapshot.Files[1].Name, "environments/staging.yaml")
 	}
 	if snapshot.SourceDigest == "" {
 		t.Fatal("SourceDigest should not be empty")
@@ -150,7 +150,7 @@ func TestRepositoryReadSnapshotFallsBackWhenGitSyncBinaryIsUnavailable(t *testin
 	if snapshot.SourceCommit != "main" {
 		t.Fatalf("SourceCommit = %q, want %q", snapshot.SourceCommit, "main")
 	}
-	if len(snapshot.Files) != 3 {
-		t.Fatalf("len(Files) = %d, want 3", len(snapshot.Files))
+	if len(snapshot.Files) != 1 {
+		t.Fatalf("len(Files) = %d, want 1", len(snapshot.Files))
 	}
 }

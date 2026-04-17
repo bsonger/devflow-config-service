@@ -414,6 +414,9 @@ const docTemplate = `{
                 "latest_revision_no": {
                     "type": "integer"
                 },
+                "mount_path": {
+                    "type": "string"
+                },
                 "name": {
                     "type": "string"
                 },
@@ -454,6 +457,9 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/github_com_bsonger_devflow-config-service_pkg_domain.LabelItem"
                     }
+                },
+                "mount_path": {
+                    "type": "string"
                 },
                 "name": {
                     "type": "string"

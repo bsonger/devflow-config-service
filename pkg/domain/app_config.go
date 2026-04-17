@@ -15,6 +15,7 @@ type AppConfig struct {
 	Description       string            `json:"description,omitempty" db:"description"`
 	Format            string            `json:"format,omitempty" db:"format"`
 	Data              string            `json:"data,omitempty" db:"data"`
+	MountPath         string            `json:"mount_path,omitempty" db:"mount_path"`
 	Labels            []LabelItem       `json:"labels,omitempty" db:"labels"`
 	SourcePath        string            `json:"source_path" db:"source_path"`
 	LatestRevisionNo  int               `json:"latest_revision_no" db:"latest_revision_no"`
@@ -43,5 +44,6 @@ type AppConfigInput struct {
 	Description   string      `json:"description,omitempty"`
 	Format        string      `json:"format,omitempty"`
 	Data          string      `json:"data,omitempty"`
+	MountPath     string      `json:"mount_path,omitempty"`
 	Labels        []LabelItem `json:"labels,omitempty"`
 }

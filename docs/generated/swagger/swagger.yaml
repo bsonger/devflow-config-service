@@ -29,6 +29,8 @@ definitions:
         type: string
       latest_revision_no:
         type: integer
+      mount_path:
+        type: string
       name:
         type: string
       rendered_configmap:
@@ -56,6 +58,8 @@ definitions:
         items:
           $ref: '#/definitions/github_com_bsonger_devflow-config-service_pkg_domain.LabelItem'
         type: array
+      mount_path:
+        type: string
       name:
         type: string
     type: object

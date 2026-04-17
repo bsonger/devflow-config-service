@@ -16,8 +16,6 @@ func TestResolveLayoutFromServicePathAndEnv(t *testing.T) {
 	}
 	want := []string{
 		"configuration.yaml",
-		"deployment.yaml",
-		"service.yaml",
 		"environments/staging.yaml",
 	}
 	if !reflect.DeepEqual(resolved.Files, want) {
@@ -32,8 +30,6 @@ func TestResolveLayoutFromServicePathBaseFilesOnly(t *testing.T) {
 	}
 	want := []string{
 		"configuration.yaml",
-		"deployment.yaml",
-		"service.yaml",
 	}
 	if !reflect.DeepEqual(resolved.Files, want) {
 		t.Fatalf("Files = %#v, want %#v", resolved.Files, want)

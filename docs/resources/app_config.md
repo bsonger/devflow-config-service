@@ -11,6 +11,7 @@
 
 `AppConfig` 是发布配置元数据资源，供 release 路径消费。
 实际文件内容来自固定配置仓，这个资源只维护逻辑身份、派生后的 `source_path` 和最新 revision 指针。当前 `source_path` 规则为 `applications/devflow-platform/services/<name>`。
+它还维护 `mount_path`，用于声明后续渲染 Deployment 时应把配置文件挂到容器内哪个目录或文件路径。
 
 ## Common base fields
 
@@ -28,6 +29,7 @@
 | `application_id` | `uuid.UUID` | required | user | 所属应用 ID |
 | `name` | `string` | required | user | 配置名 |
 | `environment_id` | `string` | required | user | 目标环境 |
+| `mount_path` | `string` | optional | user | 配置文件在容器内的挂载目标，默认 `/etc/devflow/config` |
 | `source_path` | `string` | system-derived | system | 固定配置仓中的派生路径 |
 | `latest_revision_no` | `int` | system-managed | no | 当前最新 revision 序号 |
 | `latest_revision_id` | `*uuid.UUID` | optional/system-managed | no | 当前最新 revision ID |
@@ -57,13 +59,14 @@
 ### Create
 - target relational contract:
   - required: `application_id`, `environment_id`, `name`
+  - optional: `mount_path`
   - create flow only creates identity, not revision content
 - server-managed fields:
   - `id`, `created_at`, `updated_at`
 
 ### Update
 - mutable fields:
-  - `name`, `environment_id`
+  - `name`, `environment_id`, `mount_path`
 - immutable/system-managed fields:
   - `id`, `created_at`, `deleted_at`
   - `latest_revision_no`, `latest_revision_id`
@@ -73,8 +76,9 @@
 - 固定从 `git@github.com:bsonger/devflow-config-repo.git` 的 `main` 分支读取
 - 在冻结 revision 前先执行一次 `origin/main` 的快进拉取
 - 路径由 `name` 推导为 `applications/devflow-platform/services/<name>`
-- 默认冻结 `configuration.yaml`、`deployment.yaml`、`service.yaml`
+- 默认冻结 `configuration.yaml`
 - 当 `environment_id` 不是空 / `base` 且存在 `environments/<environment_id>.yaml` 时，一并冻结该 overlay 文件
+- `deployment.yaml` / `service.yaml` 属于 workload / network 侧输入，不属于 `AppConfig` 冻结内容
 - 内容没变化时返回当前最新 revision
 - 内容变化时创建新的不可变 `AppConfigRevision`
 
