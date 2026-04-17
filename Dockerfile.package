@@ -1,4 +1,4 @@
-FROM registry.cn-hangzhou.aliyuncs.com/devflow/golang:1.25.8
+FROM --platform=linux/amd64 registry.cn-hangzhou.aliyuncs.com/devflow/golang:1.25.8
 WORKDIR /app
 RUN apk add --no-cache git openssh-client ca-certificates
 COPY .build/staging/_shared/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
