@@ -44,7 +44,7 @@ For `AppConfig` repo reads, the repo-layout contract is:
 - `applications/devflow-platform/services/<service>/*` runtime config files
 - optional `applications/devflow-platform/services/<service>/environments/<env>/*` runtime file overlays
 
-`sync-from-repo` freezes all service runtime config files first, preserving repo file names, then applies `environments/<env>/*` file overlays when they exist, producing the final file set that later becomes one ConfigMap. `deployment.yaml`, `service.yaml`, and legacy flat `environments/<env>.yaml` stay outside the `AppConfig` boundary because they belong to workload/network input, not runtime config payload.
+`sync-from-repo` freezes all service runtime config files first, preserving repo file names, then applies `environments/<env>/*` file overlays when they exist, producing the final file set that later becomes one ConfigMap. Legacy flat environment overlay files stay outside the `AppConfig` boundary because they are not runtime config payload.
 
 ## Internal package layout
 
