@@ -26,13 +26,13 @@ FROM alpine:3.22
 WORKDIR /app
 
 RUN apk upgrade --no-cache libcrypto3 libssl3 && \
-    apk add --no-cache git openssh-client ca-certificates
+    apk add --no-cache git openssh-client ca-certificates && \
+    adduser -D devuser
 
-COPY --from=builder /app/devflow-config-service ./devflow-config-service
-COPY --from=builder /app/docs ./docs
-COPY --from=builder /tmp/devflow-config-repo ./config-repo
+COPY --from=builder --chown=devuser:devuser /app/devflow-config-service ./devflow-config-service
+COPY --from=builder --chown=devuser:devuser /app/docs ./docs
+COPY --from=builder --chown=devuser:devuser /tmp/devflow-config-repo ./config-repo
 
-RUN adduser -D devuser
 USER devuser
 
 EXPOSE 8080
