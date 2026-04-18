@@ -76,9 +76,9 @@
 - 固定从 `git@github.com:bsonger/devflow-config-repo.git` 的 `main` 分支读取
 - 在冻结 revision 前先执行一次 `origin/main` 的快进拉取
 - 路径由 `name` 推导为 `applications/devflow-platform/services/<name>`
-- 默认冻结 `configuration.yaml`
-- 当 `environment_id` 不是空 / `base` 且存在 `environments/<environment_id>.yaml` 时，一并冻结该 overlay 文件
-- `deployment.yaml` / `service.yaml` 属于 workload / network 侧输入，不属于 `AppConfig` 冻结内容
+- 默认冻结服务目录下全部运行时配置文件，并保留 repo 里的原始文件名
+- 当 `environment_id` 不是空 / `base` 且存在 `environments/<environment_id>/*` 时，按同名文件覆盖/追加，得到最终文件集
+- `deployment.yaml` / `service.yaml` / legacy `environments/<environment_id>.yaml` 属于 workload / network 侧输入，不属于 `AppConfig` 冻结内容
 - 内容没变化时返回当前最新 revision
 - 内容变化时创建新的不可变 `AppConfigRevision`
 

@@ -9,8 +9,12 @@ import (
 
 type layoutResolution struct {
 	SourcePath string
-	Dir        string
-	Files      []string
+	Entries    []layoutEntry
+}
+
+type layoutEntry struct {
+	Name     string
+	DiskPath string
 }
 
 func resolveLayout(rootDir, sourcePath, env string) (*layoutResolution, error) {
@@ -26,58 +30,98 @@ func resolveLayout(rootDir, sourcePath, env string) (*layoutResolution, error) {
 	if err != nil {
 		return nil, err
 	}
-	files := make([]string, 0, len(entries)+1)
-	configOnlyLayout := strings.HasPrefix(normalizedSource, "applications/devflow-platform/services/")
+	entryMap := make(map[string]string, len(entries)+4)
+	serviceLayout := strings.HasPrefix(normalizedSource, "applications/devflow-platform/services/")
 	for _, entry := range entries {
 		if entry.IsDir() {
 			continue
 		}
-		if configOnlyLayout && entry.Name() != "configuration.yaml" {
+		if serviceLayout && isServiceLayoutExcludedFile(entry.Name()) {
 			continue
 		}
-		files = append(files, entry.Name())
+		entryMap[entry.Name()] = filepath.Join(dir, entry.Name())
 	}
-	if envFile := resolveEnvironmentOverlay(dir, env); envFile != "" {
-		files = append(files, envFile)
+	if serviceLayout {
+		for name, diskPath := range resolveEnvironmentOverlayFiles(dir, env) {
+			entryMap[name] = diskPath
+		}
 	}
-	if len(files) == 0 {
+	if len(entryMap) == 0 {
 		return nil, ErrSourcePathNotFound
 	}
-	sort.Slice(files, func(i, j int) bool {
-		leftWeight, rightWeight := layoutFileOrder(files[i]), layoutFileOrder(files[j])
+	names := make([]string, 0, len(entryMap))
+	for name := range entryMap {
+		names = append(names, name)
+	}
+	sort.Slice(names, func(i, j int) bool {
+		leftWeight, rightWeight := layoutFileOrder(names[i]), layoutFileOrder(names[j])
 		if leftWeight != rightWeight {
 			return leftWeight < rightWeight
 		}
-		return files[i] < files[j]
+		return names[i] < names[j]
 	})
+	resolvedEntries := make([]layoutEntry, 0, len(names))
+	for _, name := range names {
+		resolvedEntries = append(resolvedEntries, layoutEntry{Name: name, DiskPath: entryMap[name]})
+	}
 
 	return &layoutResolution{
 		SourcePath: normalizedSource,
-		Dir:        dir,
-		Files:      files,
+		Entries:    resolvedEntries,
 	}, nil
 }
 
-func resolveEnvironmentOverlay(dir, env string) string {
+func resolveEnvironmentOverlayFiles(dir, env string) map[string]string {
 	trimmedEnv := strings.TrimSpace(env)
 	if trimmedEnv == "" || strings.EqualFold(trimmedEnv, "base") {
-		return ""
+		return nil
 	}
-	relative := filepath.ToSlash(filepath.Join("environments", trimmedEnv+".yaml"))
-	if info, err := os.Stat(filepath.Join(dir, filepath.FromSlash(relative))); err == nil && !info.IsDir() {
-		return relative
+	envDir := filepath.Join(dir, "environments", trimmedEnv)
+	entryMap := map[string]string{}
+	if relativeFiles, err := collectRelativeFiles(envDir); err == nil {
+		for _, relative := range relativeFiles {
+			entryMap[relative] = filepath.Join(envDir, filepath.FromSlash(relative))
+		}
 	}
-	return ""
+	return entryMap
+}
+
+func collectRelativeFiles(targetDir string) ([]string, error) {
+	info, err := os.Stat(targetDir)
+	if err != nil || !info.IsDir() {
+		return nil, err
+	}
+	files := make([]string, 0, 8)
+	err = filepath.WalkDir(targetDir, func(path string, entry os.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if entry.IsDir() {
+			return nil
+		}
+		relative, err := filepath.Rel(targetDir, path)
+		if err != nil {
+			return err
+		}
+		files = append(files, filepath.ToSlash(relative))
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	sort.Strings(files)
+	return files, nil
+}
+
+func isServiceLayoutExcludedFile(name string) bool {
+	switch strings.ToLower(strings.TrimSpace(name)) {
+	case "deployment.yaml", "service.yaml":
+		return true
+	default:
+		return false
+	}
 }
 
 func layoutFileOrder(name string) int {
-	switch filepath.ToSlash(name) {
-	case "configuration.yaml":
-		return 0
-	default:
-		if strings.HasPrefix(filepath.ToSlash(name), "environments/") {
-			return 1
-		}
-		return 10
-	}
+	return 0
 }

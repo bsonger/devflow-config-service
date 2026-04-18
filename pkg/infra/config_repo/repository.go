@@ -66,18 +66,18 @@ func (r *Repository) ReadSnapshot(ctx context.Context, sourcePath, env string) (
 		return nil, err
 	}
 
-	files := make([]domain.File, 0, len(resolved.Files))
+	files := make([]domain.File, 0, len(resolved.Entries))
 	hash := sha256.New()
-	for _, name := range resolved.Files {
-		content, err := os.ReadFile(filepath.Join(resolved.Dir, filepath.FromSlash(name)))
+	for _, entry := range resolved.Entries {
+		content, err := os.ReadFile(entry.DiskPath)
 		if err != nil {
 			return nil, err
 		}
 		files = append(files, domain.File{
-			Name:    name,
+			Name:    entry.Name,
 			Content: string(content),
 		})
-		hash.Write([]byte(name))
+		hash.Write([]byte(entry.Name))
 		hash.Write([]byte{'\n'})
 		hash.Write(content)
 		hash.Write([]byte{'\n'})

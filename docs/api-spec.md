@@ -37,7 +37,7 @@
 - `AppConfig` source repo is fixed to `git@github.com:bsonger/devflow-config-repo.git`
 - `AppConfig` source branch is fixed to `main`
 - `AppConfig` source path is derived from `name` as `applications/devflow-platform/services/<name>`
-- `POST /api/v1/app-configs/{id}/sync-from-repo` reads `configuration.yaml`, plus optional `environments/{env}.yaml`
+- `POST /api/v1/app-configs/{id}/sync-from-repo` reads all service runtime config files from repo, preserving repo file names, and applies optional `environments/{env}/*` file overlays into the final file set
 - `POST /api/v1/app-configs/{id}/sync-from-repo` pulls the latest `origin/main`, then freezes the current repo snapshot into an immutable revision
 - `WorkloadConfig` writable fields are `application_id`, optional `environment_id`, `name`, `replicas`, `resources`, `probes`, `env`, `workload_type`, and `strategy`
 
