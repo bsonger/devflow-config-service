@@ -18,6 +18,7 @@ spec:
       containers:
         - name: devflow-config-service
           image: registry.cn-hangzhou.aliyuncs.com/devflow/devflow-config-service:staging
+          imagePullPolicy: Always
           ports:
             - containerPort: 8082
               name: http
