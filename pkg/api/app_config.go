@@ -50,6 +50,7 @@ func (h *AppConfigHandler) Create(c *gin.Context) {
 		Data:          req.Data,
 		MountPath:     req.MountPath,
 		Labels:        req.Labels,
+		SourcePath:    req.SourcePath,
 	}
 	item.WithCreateDefault()
 	if _, err := h.svc.Create(c.Request.Context(), item); err != nil {
@@ -110,6 +111,7 @@ func (h *AppConfigHandler) Update(c *gin.Context) {
 		Data:          req.Data,
 		MountPath:     req.MountPath,
 		Labels:        req.Labels,
+		SourcePath:    req.SourcePath,
 	}
 	item.SetID(id)
 	if err := h.svc.Update(c.Request.Context(), item); err != nil {
