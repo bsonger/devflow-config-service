@@ -3,6 +3,7 @@ module github.com/bsonger/devflow-config-service
 go 1.25.6
 
 require (
+	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/bsonger/devflow-service-common v0.0.0-20260408172601-3b9b7861d057
 	github.com/gin-contrib/cors v1.7.6
 	github.com/gin-gonic/gin v1.11.0
@@ -13,7 +14,6 @@ require (
 	github.com/swaggo/gin-swagger v1.6.1
 	github.com/swaggo/swag v1.16.6
 	go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin v0.64.0
-	go.uber.org/zap v1.27.1
 )
 
 require (
@@ -82,6 +82,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.43.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.7.1 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
+	go.uber.org/zap v1.27.1 // indirect
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/arch v0.23.0 // indirect

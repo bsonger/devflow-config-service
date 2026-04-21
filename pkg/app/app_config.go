@@ -53,7 +53,9 @@ func (s *appConfigService) Create(ctx context.Context, cfg *domain.AppConfig) (u
 	if err := validateAppConfig(cfg); err != nil {
 		return uuid.Nil, err
 	}
-	cfg.SourcePath = deriveAppConfigSourcePath(cfg.Name)
+	if strings.TrimSpace(cfg.SourcePath) == "" {
+		cfg.SourcePath = deriveAppConfigSourcePath(cfg.Name)
+	}
 	cfg.MountPath = normalizeAppConfigMountPath(cfg.MountPath)
 	_, err := store.DB().ExecContext(ctx, `
 		insert into configurations (
@@ -100,7 +102,9 @@ func (s *appConfigService) Update(ctx context.Context, cfg *domain.AppConfig) er
 	}
 	cfg.CreatedAt = current.CreatedAt
 	cfg.DeletedAt = current.DeletedAt
-	cfg.SourcePath = deriveAppConfigSourcePath(cfg.Name)
+	if strings.TrimSpace(cfg.SourcePath) == "" {
+		cfg.SourcePath = current.SourcePath
+	}
 	cfg.MountPath = normalizeAppConfigMountPath(cfg.MountPath)
 	cfg.WithUpdateDefault()
 	result, err := store.DB().ExecContext(ctx, `

@@ -46,4 +46,5 @@ type AppConfigInput struct {
 	Data          string      `json:"data,omitempty"`
 	MountPath     string      `json:"mount_path,omitempty"`
 	Labels        []LabelItem `json:"labels,omitempty"`
+	SourcePath    string      `json:"source_path,omitempty"`
 }
