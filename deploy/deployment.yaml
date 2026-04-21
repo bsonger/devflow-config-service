@@ -35,7 +35,14 @@ spec:
               mountPath: /etc/devflow/config/config.yaml
               subPath: config.yaml
               readOnly: true
+            - name: git-ssh
+              mountPath: /home/devuser/.ssh
+              readOnly: true
       volumes:
         - name: config
           secret:
             secretName: config-service-config
+        - name: git-ssh
+          secret:
+            secretName: git-ssh-secret
+            defaultMode: 0400
