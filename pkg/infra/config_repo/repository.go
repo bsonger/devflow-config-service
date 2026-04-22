@@ -95,8 +95,21 @@ func (r *Repository) sync(ctx context.Context) (string, error) {
 	if r == nil || r.rootDir == "" || r.syncer == nil {
 		return "", nil
 	}
-	if _, err := os.Stat(filepath.Join(r.rootDir, ".git")); err != nil {
-		return "", nil
+	gitDir := filepath.Join(r.rootDir, ".git")
+	if _, err := os.Stat(gitDir); err != nil {
+		if os.IsNotExist(err) {
+			if entries, readErr := os.ReadDir(r.rootDir); readErr == nil && len(entries) > 0 {
+				return "", nil
+			}
+			if cloneErr := ensureClonedRepository(ctx, r.rootDir, r.defaultRefOrMain()); cloneErr != nil {
+				if isIgnorableSyncError(cloneErr) {
+					return "", nil
+				}
+				return "", fmt.Errorf("%w: %v", ErrRepositorySyncFailed, cloneErr)
+			}
+		} else {
+			return "", err
+		}
 	}
 	commit, err := r.syncer.Sync(ctx, r.rootDir, r.defaultRefOrMain())
 	if err != nil {
@@ -116,6 +129,19 @@ func (r *Repository) defaultRefOrMain() string {
 }
 
 type commandGitSyncer struct{}
+
+func ensureClonedRepository(ctx context.Context, rootDir, ref string) error {
+	if err := os.MkdirAll(filepath.Dir(rootDir), 0o755); err != nil {
+		return err
+	}
+	clone := exec.CommandContext(ctx, "git", "clone", "--branch", ref, "--single-branch", FixedRepositoryURL, rootDir)
+	clone.Env = append(os.Environ(), "GIT_TERMINAL_PROMPT=0")
+	output, err := clone.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("git clone %s %s: %w: %s", FixedRepositoryURL, rootDir, err, strings.TrimSpace(string(output)))
+	}
+	return nil
+}
 
 func (commandGitSyncer) Sync(ctx context.Context, rootDir, ref string) (string, error) {
 	pull := exec.CommandContext(ctx, "git", "-C", rootDir, "pull", "--ff-only", "origin", ref)
