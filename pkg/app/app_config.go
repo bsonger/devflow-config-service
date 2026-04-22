@@ -185,6 +185,16 @@ func (s *appConfigService) Sync(ctx context.Context, id uuid.UUID) (*AppConfigSy
 	if err != nil {
 		return nil, err
 	}
+	if namedSnapshot, resolvedPath, resolvedErr := s.readEnvironmentNamedSnapshot(ctx, cfg); resolvedErr == nil {
+		snapshot := namedSnapshot
+		if resolvedPath != "" && resolvedPath != cfg.SourcePath {
+			cfg.SourcePath = resolvedPath
+			if updateErr := s.updateSourcePath(ctx, cfg.ID, resolvedPath); updateErr != nil {
+				return nil, updateErr
+			}
+		}
+		return s.syncWithSnapshot(ctx, cfg, snapshot)
+	}
 	snapshot, err := s.repo.ReadSnapshot(ctx, cfg.SourcePath, cfg.EnvironmentID)
 	if err != nil {
 		if errors.Is(err, configrepo.ErrSourcePathNotFound) {
@@ -220,7 +230,11 @@ func (s *appConfigService) Sync(ctx context.Context, id uuid.UUID) (*AppConfigSy
 			return nil, err
 		}
 	}
-	latest, err := s.getLatestRevision(ctx, id)
+	return s.syncWithSnapshot(ctx, cfg, snapshot)
+}
+
+func (s *appConfigService) syncWithSnapshot(ctx context.Context, cfg *domain.AppConfig, snapshot *configrepo.Snapshot) (*AppConfigSyncResult, error) {
+	latest, err := s.getLatestRevision(ctx, cfg.ID)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, err
 	}
@@ -233,7 +247,7 @@ func (s *appConfigService) Sync(ctx context.Context, id uuid.UUID) (*AppConfigSy
 	}
 	revision := &domain.AppConfigRevision{
 		ID:                uuid.New(),
-		AppConfigID:       id,
+		AppConfigID:       cfg.ID,
 		RevisionNo:        revisionNo,
 		Files:             snapshot.Files,
 		RenderedConfigMap: renderConfigMap(snapshot.Files),

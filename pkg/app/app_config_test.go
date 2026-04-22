@@ -503,14 +503,11 @@ func TestSync_EnvironmentNameFallbackUsesResolvedNameAndUpdatesSourcePath(t *tes
 	if result == nil || !result.Created {
 		t.Fatalf("expected created revision result, got %#v", result)
 	}
-	if len(repo.calls) < 2 {
-		t.Fatalf("expected fallback lookup calls, got %#v", repo.calls)
+	if len(repo.calls) < 1 {
+		t.Fatalf("expected environment-name lookup call, got %#v", repo.calls)
 	}
-	if repo.calls[0].sourcePath != "applications/devflow-platform/services/devflow-network-service" || repo.calls[0].env != "13e18088-ae0a-427c-9f0e-3b0ae6bef13f" {
-		t.Fatalf("unexpected first lookup: %#v", repo.calls[0])
-	}
-	if repo.calls[1].sourcePath != "applications/devflow-platform/services/devflow-network-service/production" || repo.calls[1].env != "production" {
-		t.Fatalf("unexpected environment-name fallback lookup: %#v", repo.calls[1])
+	if repo.calls[0].sourcePath != "applications/devflow-platform/services/devflow-network-service/production" || repo.calls[0].env != "production" {
+		t.Fatalf("unexpected environment-name lookup: %#v", repo.calls[0])
 	}
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Fatalf("unfulfilled expectations: %v", err)
