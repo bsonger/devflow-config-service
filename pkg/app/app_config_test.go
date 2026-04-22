@@ -10,6 +10,7 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/bsonger/devflow-config-service/pkg/domain"
+	configrepo "github.com/bsonger/devflow-config-service/pkg/infra/config_repo"
 	"github.com/bsonger/devflow-config-service/pkg/infra/store"
 	"github.com/google/uuid"
 )
@@ -416,4 +417,110 @@ func TestNormalizeAppConfigMountPath(t *testing.T) {
 			t.Errorf("normalizeAppConfigMountPath(%q) = %q, want %q", tc.value, got, tc.want)
 		}
 	}
+}
+
+type fakeEnvironmentResolver struct {
+	name string
+	err  error
+}
+
+func (f fakeEnvironmentResolver) ResolveName(_ context.Context, environmentID string) (string, error) {
+	if f.err != nil {
+		return "", f.err
+	}
+	return f.name, nil
+}
+
+type fakeAppConfigRepo struct {
+	calls []struct {
+		sourcePath string
+		env        string
+	}
+	snapshots map[string]*configrepo.Snapshot
+}
+
+func (f *fakeAppConfigRepo) ReadSnapshot(_ context.Context, sourcePath, env string) (*configrepo.Snapshot, error) {
+	f.calls = append(f.calls, struct {
+		sourcePath string
+		env        string
+	}{sourcePath: sourcePath, env: env})
+	if snapshot, ok := f.snapshots[sourcePath+"|"+env]; ok {
+		return snapshot, nil
+	}
+	return nil, configrepo.ErrSourcePathNotFound
+}
+
+func TestSync_EnvironmentNameFallbackUsesResolvedNameAndUpdatesSourcePath(t *testing.T) {
+	mock, cleanup := setupMockDB(t)
+	defer cleanup()
+
+	id := uuid.MustParse("df5ac30b-097c-47cd-8261-c078065e6c11")
+	appID := uuid.MustParse("766016f0-c8d2-44f7-8787-96258c58490f")
+	rows := sqlmock.NewRows([]string{"id", "application_id", "name", "env", "description", "format", "data", "mount_path", "labels", "source_path", "latest_revision_no", "latest_revision_id", "created_at", "updated_at", "deleted_at"}).
+		AddRow(id, appID.String(), "devflow-network-service", "13e18088-ae0a-427c-9f0e-3b0ae6bef13f", "", "yaml", "foo: bar", "/etc/devflow/config", []byte(`{}`), "applications/devflow-platform/services/devflow-network-service", 0, nil, mustParseTime("2026-04-22T00:00:00Z"), mustParseTime("2026-04-22T00:00:00Z"), nil)
+
+	mock.ExpectQuery(regexp.QuoteMeta(`
+		select id, application_id, name, env, description, format, data, mount_path, labels, source_path, latest_revision_no, latest_revision_id, created_at, updated_at, deleted_at
+		from configurations where id=$1 and deleted_at is null
+	`)).WithArgs(id).WillReturnRows(rows)
+	mock.ExpectExec(regexp.QuoteMeta(`
+		update configurations
+		set source_path=$2, updated_at=$3
+		where id=$1 and deleted_at is null
+	`)).WithArgs(id, "applications/devflow-platform/services/devflow-network-service/production", sqlmock.AnyArg()).WillReturnResult(sqlmock.NewResult(0, 1))
+	mock.ExpectQuery(regexp.QuoteMeta(`
+		select id, configuration_id, revision_no, files, rendered_configmap, content_hash, source_commit, source_digest, created_at
+		from configuration_revisions
+		where configuration_id=$1
+		order by revision_no desc limit 1
+	`)).WithArgs(id).WillReturnError(sql.ErrNoRows)
+	mock.ExpectExec(regexp.QuoteMeta(`
+		insert into configuration_revisions (
+			id, configuration_id, revision_no, files, rendered_configmap, content_hash, source_commit, source_digest, message, created_by, created_at
+		) values ($1,$2,$3,$4,$5,$6,$7,$8,'','',$9)
+	`)).WillReturnResult(sqlmock.NewResult(0, 1))
+	mock.ExpectExec(regexp.QuoteMeta(`
+		update configurations
+		set latest_revision_no=$2, latest_revision_id=$3, updated_at=$4
+		where id=$1 and deleted_at is null
+	`)).WithArgs(id, 1, sqlmock.AnyArg(), sqlmock.AnyArg()).WillReturnResult(sqlmock.NewResult(0, 1))
+
+	repo := &fakeAppConfigRepo{snapshots: map[string]*configrepo.Snapshot{
+		"applications/devflow-platform/services/devflow-network-service/production|production": {
+			SourcePath:   "applications/devflow-platform/services/devflow-network-service/production",
+			SourceCommit: "abc123",
+			SourceDigest: "digest-1",
+			Files: []domain.File{{Name: "config.yaml", Content: "server:\n  port: 8086\n"}},
+		},
+	}}
+	svc := NewAppConfigService(repo)
+	svc.environmentResolver = fakeEnvironmentResolver{name: "production"}
+
+	result, err := svc.Sync(context.Background(), id)
+	if err != nil {
+		t.Fatalf("Sync returned error: %v", err)
+	}
+	if result == nil || !result.Created {
+		t.Fatalf("expected created revision result, got %#v", result)
+	}
+	if len(repo.calls) < 2 {
+		t.Fatalf("expected fallback lookup calls, got %#v", repo.calls)
+	}
+	if repo.calls[0].sourcePath != "applications/devflow-platform/services/devflow-network-service" || repo.calls[0].env != "13e18088-ae0a-427c-9f0e-3b0ae6bef13f" {
+		t.Fatalf("unexpected first lookup: %#v", repo.calls[0])
+	}
+	if repo.calls[1].sourcePath != "applications/devflow-platform/services/devflow-network-service/production" || repo.calls[1].env != "production" {
+		t.Fatalf("unexpected environment-name fallback lookup: %#v", repo.calls[1])
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("unfulfilled expectations: %v", err)
+	}
+}
+
+func mustParseTime(value string) time.Time {
+	parsed, err := time.Parse(time.RFC3339, value)
+	if err != nil {
+		panic(err)
+	}
+	return parsed
 }

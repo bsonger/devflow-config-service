@@ -18,12 +18,13 @@ type ConfigRepoConfig struct {
 }
 
 type Config struct {
-	Server     *domain.ServerConfig   `mapstructure:"server" json:"server" yaml:"server"`
-	Postgres   *domain.PostgresConfig `mapstructure:"postgres" json:"postgres" yaml:"postgres"`
-	Log        *domain.LogConfig      `mapstructure:"log" json:"log" yaml:"log"`
-	Otel       *domain.OtelConfig     `mapstructure:"otel" json:"otel" yaml:"otel"`
-	ConfigRepo *ConfigRepoConfig      `mapstructure:"config_repo" json:"config_repo" yaml:"config_repo"`
-	Pyroscope  string                 `mapstructure:"pyroscope" json:"pyroscope" yaml:"pyroscope"`
+	Server         *domain.ServerConfig   `mapstructure:"server" json:"server" yaml:"server"`
+	Postgres       *domain.PostgresConfig `mapstructure:"postgres" json:"postgres" yaml:"postgres"`
+	Log            *domain.LogConfig      `mapstructure:"log" json:"log" yaml:"log"`
+	Otel           *domain.OtelConfig     `mapstructure:"otel" json:"otel" yaml:"otel"`
+	ConfigRepo     *ConfigRepoConfig      `mapstructure:"config_repo" json:"config_repo" yaml:"config_repo"`
+	AppServiceBase string                 `mapstructure:"app_service_base_url" json:"app_service_base_url" yaml:"app_service_base_url"`
+	Pyroscope      string                 `mapstructure:"pyroscope" json:"pyroscope" yaml:"pyroscope"`
 }
 
 func Load() (*Config, error) {
@@ -80,6 +81,7 @@ func InitRuntime(ctx context.Context, config *Config, serviceName string) (func(
 	store.InitPostgres(db)
 	configrepo.DefaultRepository = ResolveConfigRepo(config)
 	app.ConfigureAppConfigRepository(configrepo.DefaultRepository)
+	app.ConfigureEnvironmentResolver(app.ResolveEnvironmentResolver(resolveAppServiceBaseURL(config)))
 	return func(shutdownCtx context.Context) error {
 		closeErr := db.Close()
 		shutdownErr := shutdown(shutdownCtx)
@@ -111,6 +113,13 @@ func ResolveConfigPort(cfg *Config) int {
 		return 0
 	}
 	return cfg.Server.Port
+}
+
+func resolveAppServiceBaseURL(cfg *Config) string {
+	if cfg != nil && cfg.AppServiceBase != "" {
+		return cfg.AppServiceBase
+	}
+	return "http://devflow-app-service.devflow-staging.svc.cluster.local:8081"
 }
 
 func safeLogLevel(cfg *Config) string {

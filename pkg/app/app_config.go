@@ -38,7 +38,8 @@ type appConfigRepository interface {
 }
 
 type appConfigService struct {
-	repo appConfigRepository
+	repo               appConfigRepository
+	environmentResolver environmentResolver
 }
 
 func NewAppConfigService(repo appConfigRepository) *appConfigService {
@@ -47,6 +48,10 @@ func NewAppConfigService(repo appConfigRepository) *appConfigService {
 
 func ConfigureAppConfigRepository(repo appConfigRepository) {
 	AppConfigService.repo = repo
+}
+
+func ConfigureEnvironmentResolver(resolver environmentResolver) {
+	AppConfigService.environmentResolver = resolver
 }
 
 func (s *appConfigService) Create(ctx context.Context, cfg *domain.AppConfig) (uuid.UUID, error) {
@@ -183,13 +188,24 @@ func (s *appConfigService) Sync(ctx context.Context, id uuid.UUID) (*AppConfigSy
 	snapshot, err := s.repo.ReadSnapshot(ctx, cfg.SourcePath, cfg.EnvironmentID)
 	if err != nil {
 		if errors.Is(err, configrepo.ErrSourcePathNotFound) {
-			fallbackPath := deriveAppConfigSourcePath(cfg.Name)
-			if fallbackPath != "" && fallbackPath != cfg.SourcePath {
-				snapshot, err = s.repo.ReadSnapshot(ctx, fallbackPath, cfg.EnvironmentID)
-				if err == nil {
-					cfg.SourcePath = fallbackPath
-					if updateErr := s.updateSourcePath(ctx, cfg.ID, fallbackPath); updateErr != nil {
+			if namedSnapshot, resolvedPath, resolvedErr := s.readEnvironmentNamedSnapshot(ctx, cfg); resolvedErr == nil {
+				snapshot = namedSnapshot
+				if resolvedPath != "" && resolvedPath != cfg.SourcePath {
+					cfg.SourcePath = resolvedPath
+					if updateErr := s.updateSourcePath(ctx, cfg.ID, resolvedPath); updateErr != nil {
 						return nil, updateErr
+					}
+				}
+				err = nil
+			} else {
+				fallbackPath := deriveAppConfigSourcePath(cfg.Name)
+				if fallbackPath != "" && fallbackPath != cfg.SourcePath {
+					snapshot, err = s.repo.ReadSnapshot(ctx, fallbackPath, cfg.EnvironmentID)
+					if err == nil {
+						cfg.SourcePath = fallbackPath
+						if updateErr := s.updateSourcePath(ctx, cfg.ID, fallbackPath); updateErr != nil {
+							return nil, updateErr
+						}
 					}
 				}
 			}
@@ -333,6 +349,29 @@ func normalizeAppConfigMountPath(value string) string {
 		return "/etc/devflow/config"
 	}
 	return trimmed
+}
+
+func (s *appConfigService) readEnvironmentNamedSnapshot(ctx context.Context, cfg *domain.AppConfig) (*configrepo.Snapshot, string, error) {
+	if s == nil || s.environmentResolver == nil || cfg == nil {
+		return nil, "", configrepo.ErrSourcePathNotFound
+	}
+	trimmedEnvID := strings.TrimSpace(cfg.EnvironmentID)
+	if trimmedEnvID == "" || strings.EqualFold(trimmedEnvID, "base") {
+		return nil, "", configrepo.ErrSourcePathNotFound
+	}
+	environmentName, err := s.environmentResolver.ResolveName(ctx, trimmedEnvID)
+	if err != nil {
+		return nil, "", err
+	}
+	resolvedPath := strings.TrimRight(strings.TrimSpace(cfg.SourcePath), "/") + "/" + strings.TrimSpace(environmentName)
+	if strings.TrimSpace(resolvedPath) == "" || resolvedPath == "/" {
+		return nil, "", configrepo.ErrSourcePathNotFound
+	}
+	snapshot, err := s.repo.ReadSnapshot(ctx, resolvedPath, environmentName)
+	if err != nil {
+		return nil, "", err
+	}
+	return snapshot, resolvedPath, nil
 }
 
 func renderConfigMap(files []domain.File) domain.RenderedConfigMap {
